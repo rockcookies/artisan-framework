@@ -1,6 +1,6 @@
 {
 	"name": "@artisan-framework/validate",
-	"version": "0.0.2-alpha.0",
+	"version": "0.0.3-alpha.0",
 	"description": "",
 	"license": "MIT",
 	"main": "build/index.js",
@@ -31,7 +31,8 @@
 		"clean": "rimraf build/*",
 		"precompile": "tsc --version",
 		"compile": "tsc -p .",
-		"watch": "tsc -w"
+		"watch": "tsc -w",
+		"prepublishOnly": "npm run clean && npm run compile"
 	},
 	"devDependencies": {
 		"@types/jest": "^26.0.0",
