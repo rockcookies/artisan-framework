@@ -1,0 +1,33 @@
+{
+	"name": "@artisan-framework/parent",
+	"private": true,
+	"description": "Artisan Framework is a serverless First, scalable and componentized application framework.",
+	"main": "build/index.js",
+	"scripts": {
+		"clean": "lerna run clean",
+		"precompile": "tsc --version",
+		"compile": "lerna run compile",
+		"test": "lerna run test",
+		"bootstrap": "lerna bootstrap",
+		"bump": "lerna publish",
+		"codecov": "lerna run codecov",
+		"lint": "lerna run lint",
+		"lint:fix": "lerna run lint:fix"
+	},
+	"workspaces": [
+		"packages/*"
+	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Rockcookies/artisan-framework.git"
+	},
+	"keywords": [
+		"artisan-framework"
+	],
+	"author": "RockCookies",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/Rockcookies/artisan-framework/issues"
+	},
+	"homepage": "https://github.com/Rockcookies/artisan-framework#readme"
+}
