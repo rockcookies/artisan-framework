@@ -28,9 +28,9 @@
 		"codecov": "jest --coverage",
 		"lint": "eslint . --ext .ts",
 		"lint:fix": "eslint . --ext .ts --fix",
-		"clean": "rimraf build/*",
+		"clean": "rimraf ./build",
 		"precompile": "tsc --version",
-		"compile": "tsc -p .",
+		"compile": "tsc -p tsconfig.build.json",
 		"watch": "tsc -w",
 		"prepublishOnly": "npm run clean && npm run compile"
 	},

@@ -16,9 +16,11 @@ export class ArtisanThrowable<T extends ErrorOptions> extends CustomError {
 	protected options?: T;
 
 	constructor(options?: T) {
-		super(options?.message || '');
+		super();
 		this.options = options || ({} as T);
+		this.message = this.options.message || '';
 		this.code = this.options.code || '';
+		this.name = this.constructor.name;
 	}
 
 	public static getType(err: Error): ArtisanErrorType {

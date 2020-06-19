@@ -28,9 +28,9 @@
 		"codecov": "jest --coverage",
 		"lint": "eslint . --ext .ts",
 		"lint:fix": "eslint . --ext .ts --fix",
-		"clean": "rimraf build/*",
+		"clean": "rimraf ./build",
 		"precompile": "tsc --version",
-		"compile": "tsc -p .",
+		"compile": "tsc -p tsconfig.build.json",
 		"watch": "tsc -w",
 		"prepublishOnly": "npm run clean && npm run compile"
 	},
@@ -48,5 +48,8 @@
 		"ts-jest": "^26.1.0",
 		"ts-node": "^8.10.2",
 		"typescript": "^3.9.5"
+	},
+	"dependencies": {
+		"@artisan-framework/core": "^0.0.4-alpha.0"
 	}
 }

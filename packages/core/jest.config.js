@@ -6,4 +6,7 @@ module.exports = {
 	transform: {
 		'^.+\\.(ts|tsx)$': 'ts-jest',
 	},
+	moduleNameMapper: {
+		'^@artisan-framework/(.*)$': '<rootDir>/../$1/src',
+	},
 };
