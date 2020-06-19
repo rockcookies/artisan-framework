@@ -6,7 +6,6 @@ import { ObjectCriterion } from './types/object';
 import { StringCriterion } from './types/string';
 import { TupleCriterion } from './types/tuple';
 import { UnionCriterion } from './types/union';
-// import { formatValidateError } from './error';
 
 export const Validator = {
 	array: ArrayCriterion.create,
@@ -22,5 +21,6 @@ export const Validator = {
 	union: UnionCriterion.create,
 };
 
+export { formatValidateError } from './validate-helper';
 export * as locale from './locale';
 export { Criterion, CriterionStatic, CriterionMixed, CriterionShape, CriterionShapeStatic } from './criterion';
