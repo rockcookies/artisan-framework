@@ -1,16 +1,38 @@
-import { CustomError } from 'ts-custom-error';
-import { ArtisanErrorType } from '../constants';
-
 const TYPE: symbol = Symbol.for('ArtisanError#type');
 
-interface ErrorOptions {
+enum ErrorType {
+	BUILTIN = 'BUILTIN',
+	ERROR = 'ERROR',
+	EXCEPTION = 'EXCEPTION',
+}
+
+export interface ErrorOptions {
 	code?: string;
 	message: string;
 	[key: string]: any;
 }
 
-export class ArtisanThrowable<T extends ErrorOptions> extends CustomError {
+export class ArtisanThrowable<T extends ErrorOptions> extends Error {
 	[key: string]: any;
+
+	public static getType(err: Error): string {
+		return (err as any)[TYPE] || ErrorType.BUILTIN;
+	}
+
+	public static from<
+		S extends new (...args: any) => InstanceType<typeof ArtisanThrowable>,
+		P extends ConstructorParameters<S>
+	>(this: S, err: Error, ...args: P | undefined[]): InstanceType<S> {
+		// eslint-disable-next-line @typescript-eslint/no-this-alias
+		const ErrorClass = this;
+		const newErr = new ErrorClass(...(args as any[]));
+		newErr.message = err.message;
+		newErr.stack = err.stack;
+		for (const key of Object.keys(err)) {
+			newErr[key] = (err as any)[key];
+		}
+		return newErr as InstanceType<S>;
+	}
 
 	public code: string;
 	protected options?: T;
@@ -22,38 +44,40 @@ export class ArtisanThrowable<T extends ErrorOptions> extends CustomError {
 		this.code = this.options.code || '';
 		this.name = this.constructor.name;
 	}
-
-	public static getType(err: Error): ArtisanErrorType {
-		return (err as any)[TYPE] || ArtisanErrorType.BUILTIN;
-	}
-
-	public static from<
-		S extends new (...args: any) => InstanceType<typeof ArtisanThrowable>,
-		P extends ConstructorParameters<S>
-	>(this: S, err: Error, ...args: P | undefined[]): InstanceType<S> {
-		const ErrorClass = this as any;
-		const newErr = new ErrorClass(...(args as any[]));
-		newErr.message = err.message;
-		newErr.stack = err.stack;
-		for (const key of Object.keys(err)) {
-			newErr[key] = (err as any)[key];
-		}
-		return newErr as InstanceType<S>;
-	}
 }
 
-export class ArtisanError<T extends ErrorOptions = ErrorOptions> extends ArtisanThrowable<T> {
+export class ArtisanBaseException<T extends ErrorOptions> extends ArtisanThrowable<T> {
 	constructor(options?: T) {
 		super(options);
 
-		(this as any)[TYPE] = ArtisanErrorType.ERROR;
+		(this as any)[TYPE] = ErrorType.EXCEPTION;
 	}
 }
 
-export class ArtisanException<T extends ErrorOptions = ErrorOptions> extends ArtisanThrowable<T> {
+/** ArtisanException is system error. */
+export class ArtisanException extends ArtisanBaseException<ErrorOptions> {
+	constructor(message?: string) {
+		super({
+			code: 'ARTISAN_EXCEPTION',
+			message: message || '',
+		});
+	}
+}
+
+export class ArtisanBaseError<T extends ErrorOptions> extends ArtisanThrowable<T> {
 	constructor(options?: T) {
 		super(options);
 
-		(this as any)[TYPE] = ArtisanErrorType.EXCEPTION;
+		(this as any)[TYPE] = ErrorType.ERROR;
+	}
+}
+
+/** ArtisanError is business error. */
+export class ArtisanError extends ArtisanBaseError<ErrorOptions> {
+	constructor(message?: string) {
+		super({
+			code: 'ARTISAN_ERROR',
+			message: message || '',
+		});
 	}
 }

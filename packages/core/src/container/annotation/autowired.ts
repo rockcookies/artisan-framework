@@ -1,6 +1,7 @@
 import 'reflect-metadata';
-import { Constructor, ServiceToken, TaggedAutowiredMetadata } from '../interfaces';
-import { tagParameter, tagProperty } from '../utils/decorator-helper';
+import { ServiceToken, TaggedAutowiredMetadata } from '../container-protocol';
+import { Constructor } from '../../interfaces';
+import { tagParameter, tagProperty } from '../decorator-helper';
 
 export interface AutowiredOptions {
 	token?: ServiceToken | LazyConstructor;
@@ -14,7 +15,7 @@ export interface AutowiredAllOptions {
 
 export function lazy<T>(wrappedConstructor: () => Constructor<T>): LazyConstructor<T> {
 	/* if (typeof wrappedConstructor === 'undefined') {
-		throw new Error('Attempt to `delay` undefined. Constructor must be wrapped in a callback');
+		throw new ArtisanException('Attempt to `lazy` undefined. Constructor must be wrapped in a callback');
 	} */
 	return new LazyConstructor(wrappedConstructor);
 }

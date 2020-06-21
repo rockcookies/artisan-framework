@@ -1,5 +1,6 @@
-import { Constructor, ServiceToken } from '../interfaces';
 import { formatServiceToken } from './decorator-helper';
+import { ServiceToken } from './container-protocol';
+import { Constructor } from '../interfaces';
 
 export const DUPLICATED_PARAMETER_METADATA = (idx: number | string, ctor: Constructor<any>) =>
 	`The @autowired was used more than once at position #${idx} of "${formatServiceToken(ctor)}" constructor.`;

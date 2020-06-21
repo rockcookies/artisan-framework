@@ -1,5 +1,5 @@
-import { TaggedValueMetadata } from '../interfaces';
-import { tagParameter, tagProperty } from '../utils/decorator-helper';
+import { TaggedValueMetadata } from '../container-protocol';
+import { tagParameter, tagProperty } from '../decorator-helper';
 
 export interface ValueOptions {
 	el: string;

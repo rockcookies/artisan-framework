@@ -1,7 +1,7 @@
-import { TAGGED_ADVISOR } from '../constants';
-import { Constructor, DependencyContainer, ServiceToken } from '../interfaces';
-import { tagAdvisorProperty } from '../utils/decorator-helper';
 import { ComponentOptions } from './component';
+import { ServiceToken, DependencyContainer, TAGGED_ADVISOR } from '../container-protocol';
+import { Constructor } from '../../interfaces';
+import { tagAdvisorProperty } from '../decorator-helper';
 
 export interface AdvisorOptions {
 	order?: number;

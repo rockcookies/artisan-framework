@@ -1,21 +1,22 @@
-import { LazyConstructor } from '../annotation/autowired';
-import { ComponentOptions } from '../annotation/component';
-import { ConfigProviderToken } from '../constants';
-import {
-	AdvisorRegistry,
-	ClassRegistry,
-	Constructor,
-	DependencyContainer,
-	GenericClassRegistry,
-	ObjectFactory,
-	ServiceRegistry,
-	ServiceToken,
-	TaggedAutowiredMetadata,
-	TaggedMetadata,
-} from '../interfaces';
-import { NOT_REGISTERED } from '../utils/error-messages';
+import { LazyConstructor } from './annotation/autowired';
+import { ComponentOptions } from './annotation/component';
 import { AdvisorManager } from './advisor-manager';
 import { Registry } from './registry';
+import {
+	GenericClassRegistry,
+	DependencyContainer,
+	ObjectFactory,
+	ServiceToken,
+	AdvisorRegistry,
+	ClassRegistry,
+	TaggedAutowiredMetadata,
+	ServiceRegistry,
+	TaggedMetadata,
+	ConfigProviderToken,
+} from './container-protocol';
+import { Constructor } from '../interfaces';
+import { NOT_REGISTERED } from './error-messages';
+import { ArtisanException } from '../error';
 
 interface ResolutionContext {
 	dependencies: Map<GenericClassRegistry, any>;
@@ -112,7 +113,7 @@ export class DependencyContainerProvider implements DependencyContainer {
 		}
 
 		if (!registries) {
-			throw new Error(NOT_REGISTERED(token));
+			throw new ArtisanException(NOT_REGISTERED(token));
 		}
 
 		if (Array.isArray(registries)) {

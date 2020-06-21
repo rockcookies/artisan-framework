@@ -1,0 +1,1 @@
+# Artisan Framework - Web extension

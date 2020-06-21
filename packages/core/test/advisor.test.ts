@@ -4,8 +4,8 @@ import {
 	afterAsyncMethodThrows,
 	beforeMethod,
 	afterSyncMethodReturning,
-} from '../src/annotation/advice';
-import { DependencyContainerProvider } from '../src/factory/dependency-container-provider';
+	DependencyContainerProvider,
+} from '../src/index';
 import { MethodInvokeContext } from '../src/interfaces';
 
 describe('advisor', () => {

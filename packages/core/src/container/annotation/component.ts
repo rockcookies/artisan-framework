@@ -1,7 +1,7 @@
 import 'reflect-metadata';
-import { TAGGED_CLASS } from '../constants';
-import { ComponentScope, Constructor, ServiceToken } from '../interfaces';
 import { isNormalToken, isConstructorToken } from './autowired';
+import { TAGGED_CLASS, ServiceToken, ComponentScope } from '../container-protocol';
+import { Constructor } from '../../interfaces';
 
 export interface ComponentOptions<T> {
 	token?: ServiceToken<T>;

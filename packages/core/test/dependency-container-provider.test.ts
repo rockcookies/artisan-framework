@@ -1,7 +1,7 @@
-import { autowired, lazy, autowiredAll } from '../src/annotation/autowired';
-import { component } from '../src/annotation/component';
-import { DependencyContainerProvider } from '../src/factory/dependency-container-provider';
-import { DUPLICATED_PARAMETER_METADATA, NOT_REGISTERED } from '../src/utils/error-messages';
+import { autowired, lazy, autowiredAll } from '../src/container/annotation/autowired';
+import { component } from '../src/container/annotation/component';
+import { DependencyContainerProvider } from '../src/container/dependency-container-provider';
+import { DUPLICATED_PARAMETER_METADATA, NOT_REGISTERED } from '../src/container/error-messages';
 
 interface IBar {
 	value: string;

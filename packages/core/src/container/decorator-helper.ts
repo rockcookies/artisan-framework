@@ -1,8 +1,15 @@
-import { isNormalToken } from '../annotation/autowired';
-import { TAGGED_ADVISOR_PROPERTY, TAGGED_PARAMETER, TAGGED_PROPERTY } from '../constants';
-import { Dictionary, ServiceToken, TaggedMetadata } from '../interfaces';
+import { isNormalToken } from '../container/annotation/autowired';
 import { DUPLICATED_PARAMETER_METADATA } from './error-messages';
-import { attachMetadataProps, reduceMetadataProps } from './reflect-helper';
+import { attachMetadataProps, reduceMetadataProps } from '../utils/reflect-helper';
+import {
+	TaggedMetadata,
+	TAGGED_PARAMETER,
+	TAGGED_PROPERTY,
+	TAGGED_ADVISOR_PROPERTY,
+	ServiceToken,
+} from './container-protocol';
+import { Dictionary } from '../interfaces';
+import { ArtisanException } from '../error';
 
 export function tagParameter(target: any, metadata: TaggedMetadata, parameterIndex: string): any {
 	let parameters: Dictionary<TaggedMetadata> = {};
@@ -12,7 +19,7 @@ export function tagParameter(target: any, metadata: TaggedMetadata, parameterInd
 	}
 
 	if (parameters[parameterIndex]) {
-		throw new Error(DUPLICATED_PARAMETER_METADATA(parameterIndex, target));
+		throw new ArtisanException(DUPLICATED_PARAMETER_METADATA(parameterIndex, target));
 	}
 
 	Reflect.defineMetadata(
@@ -55,7 +62,6 @@ export function formatServiceToken(token: ServiceToken): string {
 	} else if (isNormalToken(token)) {
 		return token.toString();
 	} else {
-		// const [, params = null] = token.toString().match(/constructor\(([\w, ]+)\)/) || [];
 		return `class<${token.name}>`;
 	}
 }

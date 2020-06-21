@@ -1,4 +1,4 @@
-import { ConfigProvider } from '../interfaces';
+import { ConfigProvider } from './container-protocol';
 
 export abstract class AbstractConfigProvider implements ConfigProvider {
 	get<T>(key: string, defaultValue?: T): T {

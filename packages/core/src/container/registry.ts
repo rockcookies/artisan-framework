@@ -1,6 +1,6 @@
-import { AdvisorOptions } from '../annotation/advice';
-import { LazyConstructor } from '../annotation/autowired';
-import { ComponentOptions } from '../annotation/component';
+import { AdvisorOptions } from './annotation/advice';
+import { LazyConstructor } from './annotation/autowired';
+import { ComponentOptions } from './annotation/component';
 import {
 	AdvisorProviderToken,
 	ConfigProviderToken,
@@ -9,20 +9,18 @@ import {
 	TAGGED_CLASS,
 	TAGGED_PARAMETER,
 	TAGGED_PROPERTY,
-} from '../constants';
-import {
 	AdvisorRegistry,
 	ComponentScope,
-	Constructor,
 	DependencyContainer,
-	Dictionary,
 	ObjectFactory,
 	ServiceRegistry,
 	ServiceToken,
 	TaggedMetadata,
-} from '../interfaces';
-import { CIRCULAR_PARAMETER_DEPENDENCY } from '../utils/error-messages';
+} from './container-protocol';
+import { CIRCULAR_PARAMETER_DEPENDENCY } from './error-messages';
 import { recursiveGetMetadata } from '../utils/reflect-helper';
+import { Constructor, Dictionary } from '../interfaces';
+import { ArtisanException } from '../error';
 
 export class Registry {
 	private _map = new Map<ServiceToken, ServiceRegistry[]>();
@@ -164,7 +162,7 @@ export class Registry {
 
 					// 不能循环依赖
 					if (depth.some(([depToken]) => depToken === registry.token)) {
-						throw new Error(CIRCULAR_PARAMETER_DEPENDENCY(depth));
+						throw new ArtisanException(CIRCULAR_PARAMETER_DEPENDENCY(depth));
 					}
 
 					this.checkCircular(dependencyToken, depth);

@@ -1,16 +1,16 @@
 import is from '@sindresorhus/is';
-import { AdvisorFactoryOptions, AdvisorMethodOptions } from '../annotation/advice';
-import {
-	AdvisorRegistry,
-	ClassRegistry,
-	DependencyContainer,
-	FactoryInvokeContext,
-	FactoryRegistry,
-	MethodInvokeContext,
-	ObjectFactory,
-	ServiceToken,
-} from '../interfaces';
+import { AdvisorFactoryOptions, AdvisorMethodOptions } from './annotation/advice';
 import { DependencyContainerProvider } from './dependency-container-provider';
+import {
+	ServiceToken,
+	DependencyContainer,
+	ObjectFactory,
+	FactoryRegistry,
+	FactoryInvokeContext,
+	ClassRegistry,
+	MethodInvokeContext,
+	AdvisorRegistry,
+} from './container-protocol';
 
 export class AdvisorManager {
 	private _advisedFactories = new Map<ServiceToken, (container: DependencyContainer) => ObjectFactory>();
