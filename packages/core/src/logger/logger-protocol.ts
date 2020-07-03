@@ -1,5 +1,14 @@
-export interface Logger {
+import { Dictionary } from '../interfaces';
 
-	log();
+export const LOGGER_CONFIG_KEY = 'artisan.logger';
 
+export const LoggerProvider = Symbol('LoggerProvider');
+
+export type LogFunction = (message: string, meta?: Dictionary) => void;
+
+export interface LoggerProvider {
+	error: LogFunction;
+	warn: LogFunction;
+	info: LogFunction;
+	debug: LogFunction;
 }

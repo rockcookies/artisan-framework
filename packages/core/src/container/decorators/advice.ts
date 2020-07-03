@@ -1,14 +1,9 @@
-import { ComponentOptions } from './component';
-import { ServiceToken, DependencyContainer, TAGGED_ADVISOR } from '../container-protocol';
+import { InjectionToken, DependencyContainer } from '../container-protocol';
 import { Constructor } from '../../interfaces';
 import { tagAdvisorProperty } from '../decorator-helper';
 
-export interface AdvisorOptions {
-	order?: number;
-}
-
 export interface AdvisorMethodOptions {
-	tokens?: Array<ServiceToken | RegExp>;
+	tokens?: Array<InjectionToken | RegExp>;
 	classes?: Constructor<any>[];
 	// eslint-disable-next-line @typescript-eslint/ban-types
 	methods?: Function[];
@@ -17,20 +12,8 @@ export interface AdvisorMethodOptions {
 }
 
 export interface AdvisorFactoryOptions {
-	tokens?: Array<ServiceToken | RegExp>;
+	tokens?: Array<InjectionToken | RegExp>;
 	factories?: Array<(dependencyContainer: DependencyContainer) => (...args: any[]) => any>;
-}
-
-export function advisor<T>(options?: AdvisorOptions) {
-	return function advisor(target: Constructor<T>): void {
-		const metadata: Required<ComponentOptions<any> & AdvisorOptions> = {
-			token: target,
-			scope: 'singleton',
-			order: options?.order || 0,
-		};
-
-		Reflect.defineMetadata(TAGGED_ADVISOR, metadata, target);
-	};
 }
 
 export function beforeMethod(options: AdvisorMethodOptions = {}) {

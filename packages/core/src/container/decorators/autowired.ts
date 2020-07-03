@@ -1,16 +1,24 @@
 import 'reflect-metadata';
-import { ServiceToken, TaggedAutowiredMetadata } from '../container-protocol';
+import { InjectionToken, TaggedAutowiredMetadata } from '../container-protocol';
 import { Constructor } from '../../interfaces';
 import { tagParameter, tagProperty } from '../decorator-helper';
 
 export interface AutowiredOptions {
-	token?: ServiceToken | LazyConstructor;
+	token?: InjectionToken | LazyConstructor;
 	optional?: boolean;
 }
 
 export interface AutowiredAllOptions {
-	token: ServiceToken | LazyConstructor;
+	token: InjectionToken | LazyConstructor;
 	optional?: boolean;
+}
+
+export function isNormalToken(token?: any): token is string | symbol {
+	return typeof token === 'string' || typeof token === 'symbol';
+}
+
+export function isConstructorToken(token?: any): token is Constructor<any> | LazyConstructor<any> {
+	return typeof token === 'function' || token instanceof LazyConstructor;
 }
 
 export function lazy<T>(wrappedConstructor: () => Constructor<T>): LazyConstructor<T> {
@@ -32,15 +40,7 @@ export class LazyConstructor<T = any> {
 	}
 }
 
-export function isNormalToken(token?: any): token is string | symbol {
-	return typeof token === 'string' || typeof token === 'symbol';
-}
-
-export function isConstructorToken(token?: any): token is Constructor<any> | LazyConstructor<any> {
-	return typeof token === 'function' || token instanceof LazyConstructor;
-}
-
-function resolveToken(target: any, propertyKey: string, index?: number): ServiceToken | LazyConstructor {
+function resolveToken(target: any, propertyKey: string, index?: number): InjectionToken | LazyConstructor {
 	if (typeof index === 'number') {
 		const params: any[] = Reflect.getMetadata('design:paramtypes', target) || [];
 		return params[index];
@@ -51,10 +51,10 @@ function resolveToken(target: any, propertyKey: string, index?: number): Service
 
 function decorateAutowired(
 	metadata: Partial<TaggedAutowiredMetadata>,
-	options?: ServiceToken | LazyConstructor | AutowiredOptions,
+	options?: InjectionToken | LazyConstructor | AutowiredOptions,
 ) {
 	return function autowired(target: any, propertyKey: string, index?: number): void {
-		let token: ServiceToken | LazyConstructor | undefined = undefined;
+		let token: InjectionToken | LazyConstructor | undefined = undefined;
 		let optional = false;
 
 		if (isNormalToken(options) || isConstructorToken(options)) {
@@ -84,10 +84,10 @@ function decorateAutowired(
 	};
 }
 
-export function autowiredAll(options: ServiceToken | LazyConstructor | AutowiredAllOptions) {
+export function autowiredAll(options: InjectionToken | LazyConstructor | AutowiredAllOptions) {
 	return decorateAutowired({ isArray: true }, options);
 }
 
-export function autowired(options?: ServiceToken | LazyConstructor | AutowiredOptions) {
+export function autowired(options?: InjectionToken | LazyConstructor | AutowiredOptions) {
 	return decorateAutowired({ isArray: false }, options);
 }

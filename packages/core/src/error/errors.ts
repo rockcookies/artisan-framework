@@ -1,3 +1,5 @@
+import { CustomError } from 'ts-custom-error';
+
 const TYPE: symbol = Symbol.for('ArtisanError#type');
 
 enum ErrorType {
@@ -12,7 +14,7 @@ export interface ErrorOptions {
 	[key: string]: any;
 }
 
-export class ArtisanThrowable<T extends ErrorOptions> extends Error {
+export class ArtisanThrowable<T extends ErrorOptions> extends CustomError {
 	[key: string]: any;
 
 	public static getType(err: Error): string {
@@ -38,11 +40,9 @@ export class ArtisanThrowable<T extends ErrorOptions> extends Error {
 	protected options?: T;
 
 	constructor(options?: T) {
-		super();
+		super(options?.message || '');
 		this.options = options || ({} as T);
-		this.message = this.options.message || '';
 		this.code = this.options.code || '';
-		this.name = this.constructor.name;
 	}
 }
 
@@ -74,6 +74,8 @@ export class ArtisanBaseError<T extends ErrorOptions> extends ArtisanThrowable<T
 
 /** ArtisanError is business error. */
 export class ArtisanError extends ArtisanBaseError<ErrorOptions> {
+	expose = true;
+
 	constructor(message?: string) {
 		super({
 			code: 'ARTISAN_ERROR',

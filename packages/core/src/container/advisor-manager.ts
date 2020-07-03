@@ -1,29 +1,32 @@
 import is from '@sindresorhus/is';
-import { AdvisorFactoryOptions, AdvisorMethodOptions } from './annotation/advice';
-import { DependencyContainerProvider } from './dependency-container-provider';
+import { ArtisanContainerProvider } from './artisan-container-provider';
 import {
-	ServiceToken,
-	DependencyContainer,
-	ObjectFactory,
-	FactoryRegistry,
-	FactoryInvokeContext,
-	ClassRegistry,
-	MethodInvokeContext,
 	AdvisorRegistry,
+	ClassRegistry,
+	DependencyContainer,
+	FactoryInvokeContext,
+	FactoryRegistry,
+	MethodInvokeContext,
+	ObjectFactory,
 } from './container-protocol';
+import { AdvisorFactoryOptions, AdvisorMethodOptions } from './decorators/advice';
+import { Constructor } from '../interfaces';
+
+type ContainerFactory = (container: DependencyContainer) => ObjectFactory;
 
 export class AdvisorManager {
-	private _advisedFactories = new Map<ServiceToken, (container: DependencyContainer) => ObjectFactory>();
+	private _advisedFactories = new Map<ContainerFactory, ContainerFactory>();
+	private _advisedInstances = new Map<any, any>();
+
+	constructor(private container: ArtisanContainerProvider) {}
 
 	clear() {
 		this._advisedFactories.clear();
+		this._advisedInstances.clear();
 	}
 
-	adviseFactory(
-		reg: FactoryRegistry,
-		containerProvider: DependencyContainerProvider,
-	): (container: DependencyContainer) => ObjectFactory {
-		let advisedFactory = this._advisedFactories.get(reg.token);
+	adviseFactory(reg: FactoryRegistry): (container: DependencyContainer) => ObjectFactory {
+		let advisedFactory = this._advisedFactories.get(reg.factory);
 
 		if (advisedFactory) {
 			return advisedFactory;
@@ -36,10 +39,10 @@ export class AdvisorManager {
 			const fn = reg.factory(container);
 
 			return function proxyObjectFactory(this: any, ...args: any[]) {
-				const advisors = containerProvider.resolveAllAdvisor();
+				const advisors = self._resolveAdvisors();
 
 				// 不进行代理
-				if (!advisors || advisors.length <= 0) {
+				if (advisors.length <= 0) {
 					return fn.apply(this, args);
 				}
 
@@ -84,13 +87,17 @@ export class AdvisorManager {
 			};
 		};
 
-		this._advisedFactories.set(reg.token, advisedFactory);
+		this._advisedFactories.set(reg.factory, advisedFactory);
 
 		return advisedFactory;
 	}
 
-	adviseClass(instance: any, reg: ClassRegistry, containerProvider: DependencyContainerProvider): any {
-		return new Proxy(instance, {
+	adviseClass(instance: any, reg: ClassRegistry, containerProvider: ArtisanContainerProvider): any {
+		if (this._advisedInstances.has(instance)) {
+			return this._advisedInstances.get(instance);
+		}
+
+		const newInstance = new Proxy(instance, {
 			get: (target, methodName) => {
 				const fn = target[methodName];
 
@@ -99,7 +106,7 @@ export class AdvisorManager {
 				}
 
 				return (...args: any[]): any => {
-					const advisors = containerProvider.resolveAllAdvisor();
+					const advisors = this._resolveAdvisors();
 
 					// 不进行代理
 					if (!advisors || advisors.length <= 0) {
@@ -149,6 +156,34 @@ export class AdvisorManager {
 				};
 			},
 		});
+
+		this._advisedInstances.set(instance, newInstance);
+
+		return newInstance;
+	}
+
+	protected _resolveAdvisors(): Array<[AdvisorRegistry, any]> {
+		const registries: AdvisorRegistry[] | undefined = this.container._registry.getAllAdvisors();
+
+		const result: Array<[AdvisorRegistry, any]> = [];
+
+		if (registries && registries.length > 0) {
+			const ctx = { dependencies: new Map<Constructor<any>, any>() };
+
+			for (const reg of registries) {
+				result.push([reg, this.container._resolveRegistry(reg, ctx)]);
+			}
+		}
+
+		// 排序
+		result.sort(([, a], [, b]) => {
+			const oA = typeof a.order === 'function' ? a.order() : 0;
+			const oB = typeof b.order === 'function' ? b.order() : 0;
+
+			return oA - oB;
+		});
+
+		return result;
 	}
 
 	protected wavingFactorySync(

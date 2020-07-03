@@ -1,7 +1,6 @@
 import { Constructor, Dictionary } from '../interfaces';
-import { LazyConstructor } from './annotation/autowired';
-import { AdvisorMethodOptions, AdvisorFactoryOptions } from './annotation/advice';
-import { ComponentOptions } from './annotation/component';
+import { LazyConstructor } from './decorators/autowired';
+import { AdvisorMethodOptions, AdvisorFactoryOptions } from './decorators/advice';
 
 export const TAGGED_PARAMETER = 'artisan:tagged_parameter';
 
@@ -9,23 +8,31 @@ export const TAGGED_PROPERTY = 'artisan:tagged_property';
 
 export const TAGGED_CLASS = 'artisan:tagged_class';
 
-export const TAGGED_ADVISOR = 'artisan:tagged_advisor';
-
 export const TAGGED_ADVISOR_PROPERTY = 'artisan:tagged_advisor_property';
 
-export const ConfigProviderToken = Symbol('ConfigProvider');
+export const ConfigProvider = Symbol('Artisan#ConfigProvider');
 
-export const AdvisorProviderToken = Symbol('AdvisorProvider');
+export const DependencyContainer = Symbol('Artisan#DependencyContainer');
+
+export enum InjectableScope {
+	/** The dependency container will return the same instance each time a resolution for this dependency is requested */
+	Singleton,
+	/** The same instance will be resolved for each resolution of this dependency during a single resolution chain */
+	Resolution,
+}
+
+export interface Ordered {
+	/** Get the order value of this object. */
+	order(): number;
+}
+
+export type InjectionToken<T = any> = string | symbol | Constructor<T>;
 
 export type ObjectFactory = (...args: any[]) => any;
 
-export type ServiceToken<T = any> = string | symbol | Constructor<T>;
-
-export type ComponentScope = 'singleton' | 'transient';
-
 export interface TaggedAutowiredMetadata {
 	type: 'autowired';
-	token: ServiceToken | LazyConstructor;
+	token: InjectionToken | LazyConstructor;
 	isArray: boolean;
 	optional: boolean;
 }
@@ -40,8 +47,8 @@ export type TaggedMetadata = TaggedAutowiredMetadata | TaggedValueMetadata;
 
 export interface ClassRegistry {
 	type: 'class';
-	token: ServiceToken;
-	scope: ComponentScope;
+	token: InjectionToken;
+	scope: InjectableScope;
 	clz: Constructor<any>;
 	constructorArgs: Array<TaggedMetadata | undefined>;
 	properties: Dictionary<TaggedMetadata>;
@@ -49,7 +56,6 @@ export interface ClassRegistry {
 
 export interface AdvisorRegistry extends Omit<ClassRegistry, 'type'> {
 	type: 'advisor';
-	advisorOrder: number;
 	beforeMethod?: Dictionary<AdvisorMethodOptions>;
 	afterAsyncMethodReturning?: Dictionary<AdvisorMethodOptions>;
 	afterSyncMethodReturning?: Dictionary<AdvisorMethodOptions>;
@@ -64,39 +70,63 @@ export interface AdvisorRegistry extends Omit<ClassRegistry, 'type'> {
 
 export interface FactoryRegistry {
 	type: 'factory';
-	token: ServiceToken;
+	token: InjectionToken;
 	factory: (container: DependencyContainer) => ObjectFactory;
 }
 
 export interface ConstantRegistry {
 	type: 'constant';
-	token: ServiceToken;
+	token: InjectionToken;
 	constant: any;
 }
 
-export type GenericClassRegistry = ClassRegistry | AdvisorRegistry;
+export type ServiceRegistry = ClassRegistry | AdvisorRegistry | FactoryRegistry | ConstantRegistry;
 
-export type ServiceRegistry = GenericClassRegistry | FactoryRegistry | ConstantRegistry;
+export interface ClassRegistrationOptions {
+	scope?: InjectableScope;
+}
 
 export interface DependencyContainer {
 	/** 注册类 */
-	registerClass<T>(clz: Constructor<T>, options?: ComponentOptions<any>): DependencyContainer;
+	registerClass<T>(
+		token: InjectionToken<T>,
+		clz: Constructor<T>,
+		options?: ClassRegistrationOptions,
+	): DependencyContainer;
 
 	/** 注册工厂 */
 	registerFactory<T extends ObjectFactory>(
-		token: ServiceToken,
-		factory: (container: DependencyContainer) => T,
+		token: InjectionToken<T>,
+		factory: (dependencyContainer: DependencyContainer) => T,
 	): DependencyContainer;
 
 	/** 注册常量 */
-	registerConstant<T>(token: ServiceToken, constant: T): DependencyContainer;
+	registerConstant<T>(token: InjectionToken, constant: T): DependencyContainer;
 
-	resolve<T>(token: ServiceToken<T>): T;
+	/** 注册AOP观察者 */
+	registerAdvisor<T>(clz: Constructor<T>): DependencyContainer;
 
-	resolveAll<T>(token: ServiceToken<T>): T[];
+	/**
+	 * Resolve a token into an instance
+	 *
+	 * @param token The dependency token
+	 * @return An instance of the dependency
+	 */
+	resolve<T>(token: InjectionToken<T>): T;
+	resolveAll<T>(token: InjectionToken<T>): T[];
 
-	isRegistered<T>(token: ServiceToken<T>, recursive?: boolean): boolean;
+	/**
+	 * Check if the given dependency is registered
+	 *
+	 * @param token The token to check
+	 * @param recursive Should parent containers be checked?
+	 * @return Whether or not the token is registered
+	 */
+	isRegistered<T>(token: InjectionToken<T>, recursive?: boolean): boolean;
 
+	/**
+	 * Clears all registered tokens
+	 */
 	reset(): void;
 
 	createChildContainer(): DependencyContainer;

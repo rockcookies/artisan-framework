@@ -1,15 +1,14 @@
 import {
-	advisor,
 	afterAsyncMethodReturning,
 	afterAsyncMethodThrows,
-	beforeMethod,
 	afterSyncMethodReturning,
-	DependencyContainerProvider,
+	beforeMethod,
+	ArtisanContainerProvider,
+	MethodInvokeContext,
 } from '../src/index';
-import { MethodInvokeContext } from '../src/interfaces';
 
 describe('advisor', () => {
-	const container = new DependencyContainerProvider();
+	const container = new ArtisanContainerProvider();
 
 	const sleep = (time: number): Promise<void> =>
 		new Promise((resolve) => {
@@ -44,13 +43,12 @@ describe('advisor', () => {
 
 	beforeEach(() => {
 		container.reset();
-		container.registerClass(Target);
+		container.registerClass(Target, Target);
 	});
 
 	it('beforeMethod', async () => {
 		let ctx: Partial<MethodInvokeContext> = {};
 
-		@advisor()
 		class Advice {
 			@beforeMethod({
 				classNamePattern: /Target/,
@@ -61,7 +59,7 @@ describe('advisor', () => {
 			}
 		}
 
-		container.registerClass(Advice);
+		container.registerAdvisor(Advice);
 		const target = container.resolve(Target);
 
 		await target.foo();
@@ -74,7 +72,6 @@ describe('advisor', () => {
 	it('afterSyncMethodReturning', () => {
 		let ctx: Partial<MethodInvokeContext> = {};
 
-		@advisor()
 		class Advice {
 			@afterSyncMethodReturning({
 				classNamePattern: /Target/,
@@ -85,7 +82,7 @@ describe('advisor', () => {
 			}
 		}
 
-		container.registerClass(Advice);
+		container.registerAdvisor(Advice);
 		const target = container.resolve(Target);
 
 		target.bar();
@@ -98,7 +95,6 @@ describe('advisor', () => {
 	it('afterAsyncMethodReturning', async () => {
 		let invokeContext: Partial<MethodInvokeContext> = {};
 
-		@advisor()
 		class Advice {
 			@afterAsyncMethodReturning({ tokens: [Target] })
 			async after(data: MethodInvokeContext) {
@@ -106,7 +102,7 @@ describe('advisor', () => {
 			}
 		}
 
-		container.registerClass(Advice);
+		container.registerAdvisor(Advice);
 		const target = container.resolve(Target);
 
 		await target.foo();
@@ -121,7 +117,6 @@ describe('advisor', () => {
 		let asyncThrowContext: Partial<MethodInvokeContext> = {};
 		let asyncThrowException: any = undefined;
 
-		@advisor()
 		class Advice {
 			@afterAsyncMethodThrows({
 				classNamePattern: /Target/,
@@ -140,7 +135,7 @@ describe('advisor', () => {
 			}
 		}
 
-		container.registerClass(Advice);
+		container.registerAdvisor(Advice);
 		const target = container.resolve(Target);
 
 		try {

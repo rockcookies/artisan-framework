@@ -1,14 +1,14 @@
-import { autowired, lazy, autowiredAll } from '../src/container/annotation/autowired';
-import { component } from '../src/container/annotation/component';
-import { DependencyContainerProvider } from '../src/container/dependency-container-provider';
+import { autowired, lazy, autowiredAll } from '../src/container/decorators/autowired';
+import { ArtisanContainerProvider } from '../src/container/artisan-container-provider';
 import { DUPLICATED_PARAMETER_METADATA, NOT_REGISTERED } from '../src/container/error-messages';
+import { InjectableScope } from '../src';
 
 interface IBar {
 	value: string;
 }
 
-describe('dependency-container-provider', () => {
-	const container = new DependencyContainerProvider();
+describe('artisan-container-provider.test.ts', () => {
+	const container = new ArtisanContainerProvider();
 
 	beforeEach(() => {
 		container.reset();
@@ -36,7 +36,7 @@ describe('dependency-container-provider', () => {
 	it('allows arrays to be registered by factory provider', () => {
 		class Bar {}
 
-		container.registerClass<Bar>(Bar);
+		container.registerClass(Bar, Bar);
 		container.registerFactory('BarArray', (container) => {
 			return (): Bar[] => [container.resolve(Bar)];
 		});
@@ -48,10 +48,9 @@ describe('dependency-container-provider', () => {
 	});
 
 	it('resolves a transient instance when registered by class provider', () => {
-		@component('Bar')
 		class Bar {}
 
-		container.registerClass(Bar, { scope: 'transient' });
+		container.registerClass('Bar', Bar, { scope: InjectableScope.Resolution });
 
 		const myBar = container.resolve<Bar>('Bar');
 		const myBar2 = container.resolve<Bar>('Bar');
@@ -62,10 +61,9 @@ describe('dependency-container-provider', () => {
 	});
 
 	it('resolves a singleton instance when registered by class provider', () => {
-		@component()
 		class Bar {}
 
-		container.registerClass(Bar);
+		container.registerClass(Bar, Bar);
 
 		const myBar = container.resolve(Bar);
 		const myBar2 = container.resolve(Bar);
@@ -98,18 +96,16 @@ describe('dependency-container-provider', () => {
 			bar: string;
 		}
 
-		@component('FooInterface')
 		class FooOne implements FooInterface {
 			public bar = 'foo1';
 		}
 
-		@component('FooInterface')
 		class FooTwo implements FooInterface {
 			public bar = 'foo2';
 		}
 
-		container.registerClass<FooInterface>(FooOne);
-		container.registerClass<FooInterface>(FooTwo);
+		container.registerClass<FooInterface>('FooInterface', FooOne);
+		container.registerClass<FooInterface>('FooInterface', FooTwo);
 
 		const fooArray = container.resolveAll<FooInterface>('FooInterface');
 		expect(Array.isArray(fooArray)).toBeTruthy();
@@ -124,36 +120,33 @@ describe('dependency-container-provider', () => {
 			public value = '';
 		}
 
-		container.registerClass(Bar);
+		container.registerClass(Bar, Bar);
 
 		expect(container.isRegistered(Bar)).toBeTruthy();
 	});
 
-	// --- @component() ---
+	// --- @injectable() ---
 
-	it('@component resolves when using DI', () => {
-		@component()
+	it('@injectable resolves when using DI', () => {
 		class Bar implements IBar {
 			public value = '';
 		}
 
-		@component()
 		class Foo {
 			constructor(@autowired() public myBar: Bar) {}
 		}
 
-		container.registerClass(Bar);
-		container.registerClass(Foo);
+		container.registerClass(Bar, Bar);
+		container.registerClass(Foo, Foo);
 
 		const myFoo = container.resolve(Foo);
 
 		expect(myFoo.myBar.value).toBe('');
 	});
 
-	it('@component preserves static members', () => {
+	it('@injectable preserves static members', () => {
 		const value = 'foobar';
 
-		@component()
 		class MyStatic {
 			public static testVal = value;
 
@@ -166,24 +159,21 @@ describe('dependency-container-provider', () => {
 		expect(MyStatic.testVal).toBe(value);
 	});
 
-	it('@component handles optional params', () => {
-		@component()
+	it('@injectable handles optional params', () => {
 		class Bar implements IBar {
 			public value = '';
 		}
 
-		@component()
 		class Foo {
 			constructor(public myBar: Bar) {}
 		}
 
-		@component()
 		class MyOptional {
 			constructor(@autowired() public myBar: Bar, @autowired({ optional: true }) public myFoo?: Foo) {}
 		}
 
-		container.registerClass(Bar);
-		container.registerClass(MyOptional);
+		container.registerClass(Bar, Bar);
+		container.registerClass(MyOptional, MyOptional);
 
 		const myOptional = container.resolve(MyOptional);
 		expect(myOptional.myBar instanceof Bar).toBeTruthy();
@@ -200,17 +190,15 @@ describe('dependency-container-provider', () => {
 				constructor(@autowired() @autowired() public myBar: Bar) {}
 			}
 
-			container.registerClass(Foo);
+			container.registerClass(Foo, Foo);
 		}).toThrow(DUPLICATED_PARAMETER_METADATA(0, class Foo {}));
 	});
 
 	it('@autowiredAll', () => {
-		@component('cmp')
 		class A implements IBar {
 			value = 'a';
 		}
 
-		@component('cmp')
 		class B implements IBar {
 			value = 'b';
 		}
@@ -220,9 +208,9 @@ describe('dependency-container-provider', () => {
 			values: IBar[];
 		}
 
-		container.registerClass(A);
-		container.registerClass(B);
-		container.registerClass(C);
+		container.registerClass('cmp', A);
+		container.registerClass('cmp', B);
+		container.registerClass(C, C);
 
 		const c = container.resolve(C);
 
@@ -253,9 +241,9 @@ describe('dependency-container-provider', () => {
 			public b: B;
 		}
 
-		container.registerClass(A);
-		container.registerClass(B);
-		container.registerClass(C);
+		container.registerClass(A, A);
+		container.registerClass(B, B);
+		container.registerClass(C, C);
 
 		const a = container.resolve(A);
 		const b = container.resolve(B);
@@ -286,9 +274,9 @@ describe('dependency-container-provider', () => {
 			constructor(@autowired(Foo) public myFoo: Foo) {}
 		}
 
-		container.registerClass(Bar);
-		container.registerClass(Foo);
-		container.registerClass(Test);
+		container.registerClass(Bar, Bar);
+		container.registerClass(Foo, Foo);
+		container.registerClass(Test, Test);
 
 		expect(() => {
 			container.resolve(Foo);
@@ -304,9 +292,9 @@ describe('dependency-container-provider', () => {
 
 		class C {}
 
-		container.registerClass(A);
-		container.registerClass(B);
-		container.registerClass(C);
+		container.registerClass(A, A);
+		container.registerClass(B, B);
+		container.registerClass(C, C);
 
 		const a = container.resolve(A);
 		const b = container.resolve(B);
@@ -317,16 +305,13 @@ describe('dependency-container-provider', () => {
 	});
 
 	it('resolve circular dependency with singleton', () => {
-		@component({ scope: 'singleton' })
 		class A {}
 
-		@component({ scope: 'transient' })
 		class B {
 			@autowired()
 			public a: A;
 		}
 
-		@component({ scope: 'transient' })
 		class C {
 			@autowired()
 			public a: A;
@@ -335,9 +320,9 @@ describe('dependency-container-provider', () => {
 			public b: B;
 		}
 
-		container.registerClass(A);
-		container.registerClass(B);
-		container.registerClass(C);
+		container.registerClass(A, A, { scope: InjectableScope.Singleton });
+		container.registerClass(B, B, { scope: InjectableScope.Resolution });
+		container.registerClass(C, C, { scope: InjectableScope.Resolution });
 
 		const a = container.resolve(A);
 		const b = container.resolve(B);
@@ -349,27 +334,24 @@ describe('dependency-container-provider', () => {
 	});
 
 	it('resolve hierarchical', () => {
-		@component({ scope: 'singleton' })
 		class A {
 			@autowired()
 			public a: A;
 		}
 
-		@component({ scope: 'transient' })
 		class B {
 			@autowired()
 			public a: A;
 		}
 
-		@component({ scope: 'transient' })
 		class C extends B {
 			@autowired()
 			public b: B;
 		}
 
-		container.registerClass(A);
-		container.registerClass(B);
-		container.registerClass(C);
+		container.registerClass(A, A, { scope: InjectableScope.Singleton });
+		container.registerClass(B, B, { scope: InjectableScope.Resolution });
+		container.registerClass(C, C, { scope: InjectableScope.Resolution });
 
 		const a = container.resolve(A);
 		const b = container.resolve(B);

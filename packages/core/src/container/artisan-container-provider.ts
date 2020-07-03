@@ -1,53 +1,68 @@
-import { LazyConstructor } from './annotation/autowired';
-import { ComponentOptions } from './annotation/component';
-import { AdvisorManager } from './advisor-manager';
-import { Registry } from './registry';
-import {
-	GenericClassRegistry,
-	DependencyContainer,
-	ObjectFactory,
-	ServiceToken,
-	AdvisorRegistry,
-	ClassRegistry,
-	TaggedAutowiredMetadata,
-	ServiceRegistry,
-	TaggedMetadata,
-	ConfigProviderToken,
-} from './container-protocol';
-import { Constructor } from '../interfaces';
-import { NOT_REGISTERED } from './error-messages';
 import { ArtisanException } from '../error';
+import { Constructor } from '../interfaces';
+import { AdvisorManager } from './advisor-manager';
+import {
+	AdvisorRegistry,
+	ClassRegistrationOptions,
+	ClassRegistry,
+	ConfigProvider,
+	DependencyContainer,
+	InjectableScope,
+	InjectionToken,
+	ObjectFactory,
+	ServiceRegistry,
+	TaggedAutowiredMetadata,
+	TaggedMetadata,
+} from './container-protocol';
+import { LazyConstructor } from './decorators/autowired';
+import { NOT_REGISTERED } from './error-messages';
+import { Registry } from './registry';
 
 interface ResolutionContext {
-	dependencies: Map<GenericClassRegistry, any>;
+	dependencies: Map<Constructor<any>, any>;
 }
 
-export class DependencyContainerProvider implements DependencyContainer {
-	private _registry = new Registry();
-	private _singletonCache = new Map<GenericClassRegistry, any>();
-	private _advisorManager = new AdvisorManager();
+export class ArtisanContainerProvider implements DependencyContainer {
+	_registry: Registry;
+	private _advisorManager: AdvisorManager;
 
-	constructor(public parent?: DependencyContainerProvider) {}
+	private _singletonCache = new Map<Constructor<any>, any>();
 
-	registerClass<T>(clz: Constructor<T>, options?: ComponentOptions<any>): DependencyContainerProvider {
-		this._registry.registerClass(clz, options);
+	constructor(public parent?: ArtisanContainerProvider) {
+		this._registry = new Registry();
+		this._registry.registerConstant(DependencyContainer, this);
+
+		this._advisorManager = new AdvisorManager(this);
+	}
+
+	registerClass<T>(
+		token: InjectionToken<T>,
+		clz: Constructor<T>,
+		options?: ClassRegistrationOptions,
+	): ArtisanContainerProvider {
+		this._registry.registerClass(token, clz, options);
 		return this;
 	}
 
 	registerFactory<T extends ObjectFactory>(
-		token: ServiceToken,
+		token: InjectionToken<T>,
 		factory: (dependencyContainer: DependencyContainer) => T,
-	): DependencyContainerProvider {
+	): ArtisanContainerProvider {
 		this._registry.registerFactory(token, factory);
 		return this;
 	}
 
-	registerConstant<T>(token: ServiceToken, constant: T): DependencyContainerProvider {
+	registerConstant<T>(token: InjectionToken, constant: T): ArtisanContainerProvider {
 		this._registry.registerConstant(token, constant);
 		return this;
 	}
 
-	isRegistered<T>(token: ServiceToken<T>, recursive?: boolean): boolean {
+	registerAdvisor<T>(clz: Constructor<T>): ArtisanContainerProvider {
+		this._registry.registerAdvisor(clz);
+		return this;
+	}
+
+	isRegistered<T>(token: InjectionToken<T>, recursive?: boolean): boolean {
 		if (this._registry.has(token)) {
 			return true;
 		}
@@ -60,15 +75,16 @@ export class DependencyContainerProvider implements DependencyContainer {
 	}
 
 	reset(): void {
+		this._singletonCache.clear();
 		this._registry.clear();
 		this._advisorManager.clear();
 	}
 
-	createChildContainer(): DependencyContainerProvider {
-		return new DependencyContainerProvider(this);
+	createChildContainer(): ArtisanContainerProvider {
+		return new ArtisanContainerProvider(this);
 	}
 
-	resolve<T>(token: ServiceToken<T>): T {
+	resolve<T>(token: InjectionToken<T>): T {
 		return this._resolve({
 			token,
 			optional: false,
@@ -76,7 +92,7 @@ export class DependencyContainerProvider implements DependencyContainer {
 		});
 	}
 
-	resolveAll<T>(token: ServiceToken<T>): T[] {
+	resolveAll<T>(token: InjectionToken<T>): T[] {
 		return this._resolve({
 			token,
 			optional: false,
@@ -84,22 +100,9 @@ export class DependencyContainerProvider implements DependencyContainer {
 		});
 	}
 
-	resolveAllAdvisor(): Array<[AdvisorRegistry, any]> | undefined {
-		const registries = this._registry.getAllAdvisors();
-
-		if (!registries) {
-			return;
-		}
-
-		const ctx: ResolutionContext = {
-			dependencies: new Map<ClassRegistry, any>(),
-		};
-		return registries.map<[AdvisorRegistry, any]>((reg) => [reg, this.resolveRegistry(reg, ctx)]);
-	}
-
 	_resolve(
 		meta: Pick<TaggedAutowiredMetadata, 'token' | 'isArray' | 'optional'>,
-		ctx: ResolutionContext = { dependencies: new Map<ClassRegistry, any>() },
+		ctx: ResolutionContext = { dependencies: new Map<Constructor<any>, any>() },
 	): any {
 		const token = meta.token instanceof LazyConstructor ? meta.token.unwrap() : meta.token;
 		const registries = meta.isArray ? this._registry.getAll(token) : this._registry.get(token);
@@ -117,40 +120,41 @@ export class DependencyContainerProvider implements DependencyContainer {
 		}
 
 		if (Array.isArray(registries)) {
-			return registries.map((reg) => this.resolveRegistry(reg, ctx));
+			return registries.map((reg) => this._resolveRegistry(reg, ctx));
 		} else {
-			return this.resolveRegistry(registries, ctx);
+			return this._resolveRegistry(registries, ctx);
 		}
 	}
 
-	resolveRegistry(reg: ServiceRegistry, ctx: ResolutionContext): any {
+	_resolveRegistry(reg: ServiceRegistry, ctx: ResolutionContext): any {
 		if (reg.type === 'constant') {
 			return reg.constant;
 		}
 
 		if (reg.type === 'factory') {
-			return this._advisorManager.adviseFactory(reg, this)(this);
+			return this._advisorManager.adviseFactory(reg)(this);
 		}
 
-		// 尝试获取单例缓存
-		if (reg.scope === 'singleton' && this._singletonCache.has(reg)) {
-			return this._singletonCache.get(reg);
+		if (reg.scope !== InjectableScope.Singleton) {
+			return this._construct(reg, ctx);
 		}
 
-		const instance = this.construct(reg, ctx);
+		if (this._singletonCache.has(reg.clz)) {
+			return this._singletonCache.get(reg.clz);
+		}
+
+		const instance = this._construct(reg, ctx);
 
 		// 放入单例缓存
-		if (reg.scope === 'singleton') {
-			this._singletonCache.set(reg, instance);
-		}
+		this._singletonCache.set(reg.clz, instance);
 
 		return instance;
 	}
 
-	private construct(reg: GenericClassRegistry, ctx: ResolutionContext): any {
+	private _construct(reg: ClassRegistry | AdvisorRegistry, ctx: ResolutionContext): any {
 		// 尝试获取构建中缓存
-		if (ctx.dependencies.has(reg)) {
-			return ctx.dependencies.get(reg);
+		if (ctx.dependencies.has(reg.clz)) {
+			return ctx.dependencies.get(reg.clz);
 		}
 
 		// 检查循环依赖
@@ -161,7 +165,7 @@ export class DependencyContainerProvider implements DependencyContainer {
 			if (meta.type === 'value') {
 				const provider = this._resolve(
 					{
-						token: ConfigProviderToken,
+						token: ConfigProvider,
 						optional: true,
 						isArray: false,
 					},
@@ -194,7 +198,7 @@ export class DependencyContainerProvider implements DependencyContainer {
 			instance = this._advisorManager.adviseClass(instance, reg, this);
 		}
 
-		ctx.dependencies.set(reg, instance);
+		ctx.dependencies.set(reg.clz, instance);
 
 		for (const propertyKey in reg.properties) {
 			instance[propertyKey] = resolveDependency(reg.properties[propertyKey]);
@@ -203,3 +207,5 @@ export class DependencyContainerProvider implements DependencyContainer {
 		return instance;
 	}
 }
+
+export const globalContainer: DependencyContainer = new ArtisanContainerProvider();

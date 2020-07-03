@@ -3,17 +3,15 @@ import _is from '@sindresorhus/is';
 
 export const is = _is;
 export {
-	AdvisorOptions,
 	AdvisorMethodOptions,
 	AdvisorFactoryOptions,
-	advisor,
 	beforeMethod,
 	afterAsyncMethodReturning,
 	afterSyncMethodReturning,
 	afterAsyncMethodThrows,
 	afterSyncMethodThrows,
 	beforeFactory,
-} from './annotation/advice';
+} from './decorators/advice';
 export {
 	autowired,
 	autowiredAll,
@@ -21,18 +19,17 @@ export {
 	AutowiredOptions,
 	lazy,
 	LazyConstructor,
-} from './annotation/autowired';
-export { ComponentOptions, component } from './annotation/component';
-export { ValueOptions, value } from './annotation/value';
+} from './decorators/autowired';
+export { ValueOptions, value } from './decorators/value';
 export { AbstractConfigProvider } from './abstract-config-provider';
 export {
-	ConfigProviderToken,
-	AdvisorProviderToken,
-	ObjectFactory,
-	ServiceToken,
-	ComponentScope,
+	ConfigProvider,
 	DependencyContainer,
+	ObjectFactory,
+	InjectionToken,
+	InjectableScope,
 	FactoryInvokeContext,
 	MethodInvokeContext,
-	ConfigProvider,
+	Ordered,
 } from './container-protocol';
+export { ArtisanContainerProvider, globalContainer } from './artisan-container-provider';

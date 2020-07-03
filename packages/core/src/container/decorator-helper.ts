@@ -1,4 +1,4 @@
-import { isNormalToken } from '../container/annotation/autowired';
+import { isNormalToken } from './decorators/autowired';
 import { DUPLICATED_PARAMETER_METADATA } from './error-messages';
 import { attachMetadataProps, reduceMetadataProps } from '../utils/reflect-helper';
 import {
@@ -6,7 +6,7 @@ import {
 	TAGGED_PARAMETER,
 	TAGGED_PROPERTY,
 	TAGGED_ADVISOR_PROPERTY,
-	ServiceToken,
+	InjectionToken,
 } from './container-protocol';
 import { Dictionary } from '../interfaces';
 import { ArtisanException } from '../error';
@@ -56,7 +56,7 @@ export function tagAdvisorProperty(target: any, metadata: Dictionary): any {
 	return target;
 }
 
-export function formatServiceToken(token: ServiceToken): string {
+export function formatToken(token: InjectionToken): string {
 	if (!token) {
 		return `${token}`;
 	} else if (isNormalToken(token)) {
