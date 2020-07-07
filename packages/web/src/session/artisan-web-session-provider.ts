@@ -62,7 +62,7 @@ export class ArtisanWebSessionProvider implements WebSessionProvider {
 			}
 		}
 
-		ctx.logger.debug('[web] session parsed', { json });
+		ctx.logger.debug('[web] parsed session from request', { session: json });
 
 		const session = new ArtisanWebSession({
 			expiresAt,
@@ -99,10 +99,11 @@ export class ArtisanWebSessionProvider implements WebSessionProvider {
 		}
 
 		const json = session.toJSON();
-		ctx.logger.debug('[web] save session object', { object: json });
+
+		ctx.logger.debug('[web] commit session object', { object: json });
 		const cookie = JSON.stringify(json);
 		const base64 = Buffer.from(cookie).toString('base64');
-		ctx.logger.debug('[web] save session cookie', { cookie: base64 });
+		ctx.logger.debug('[web] commit session cookie', { cookie: base64 });
 
 		ctx.cookies.set(key, base64, {
 			...options,
@@ -112,6 +113,6 @@ export class ArtisanWebSessionProvider implements WebSessionProvider {
 	}
 
 	protected verify(_ctx: WebContext, session: WebSession): boolean {
-		return session.exp > session.iat && session.exp > Date.now();
+		return session && session.exp > session.iat && session.exp > Date.now();
 	}
 }

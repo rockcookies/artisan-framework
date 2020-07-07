@@ -75,8 +75,12 @@ export class ArtisanContainerProvider implements DependencyContainer {
 	}
 
 	reset(): void {
-		this._singletonCache.clear();
+		this.clear();
 		this._registry.clear();
+	}
+
+	clear(): void {
+		this._singletonCache.clear();
 		this._advisorManager.clear();
 	}
 

@@ -11,4 +11,5 @@ export interface LoggerProvider {
 	warn: LogFunction;
 	info: LogFunction;
 	debug: LogFunction;
+	with: (ctx: Dictionary) => LoggerProvider;
 }

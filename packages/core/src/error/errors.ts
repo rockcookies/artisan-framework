@@ -74,8 +74,6 @@ export class ArtisanBaseError<T extends ErrorOptions> extends ArtisanThrowable<T
 
 /** ArtisanError is business error. */
 export class ArtisanError extends ArtisanBaseError<ErrorOptions> {
-	expose = true;
-
 	constructor(message?: string) {
 		super({
 			code: 'ARTISAN_ERROR',

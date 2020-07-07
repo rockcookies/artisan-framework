@@ -1,6 +1,7 @@
 import { Dictionary } from '@artisan-framework/core';
 import { WebSession } from './session-protocol';
 import crypto = require('crypto');
+import { v4 } from 'uuid';
 
 function hash(object: Dictionary): string {
 	return crypto.createHash('sha1').update(JSON.stringify(object), 'utf8').digest('hex');
@@ -14,7 +15,7 @@ export class ArtisanWebSession implements WebSession {
 	protected readonly _hash: string;
 
 	constructor(options: { expiresAt: number; issuedAt: number; object?: Dictionary }) {
-		this.id = crypto.randomBytes(16).toString('hex');
+		this.id = v4();
 		this.exp = options.expiresAt;
 		this.iat = options.issuedAt;
 
@@ -26,18 +27,18 @@ export class ArtisanWebSession implements WebSession {
 		this._hash = hash(this.toJSON());
 	}
 
-	toJSON() {
+	toJSON(): Dictionary {
 		const obj: Dictionary = {};
 
-		Object.keys(this).forEach((key) => {
-			if (key === 'isNew' || key[0] === '_') return;
+		for (const key of Object.keys(this)) {
+			if (key === 'isNew' || key[0] === '_') continue;
 			obj[key] = (this as any)[key];
-		});
+		}
 
 		return obj;
 	}
 
 	changed() {
-		return this._hash === hash(this.toJSON());
+		return this._hash !== hash(this.toJSON());
 	}
 }

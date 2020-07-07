@@ -129,6 +129,8 @@ export interface DependencyContainer {
 	 */
 	reset(): void;
 
+	clear(): void;
+
 	createChildContainer(): DependencyContainer;
 }
 

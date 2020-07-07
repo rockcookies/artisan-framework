@@ -1,11 +1,13 @@
-import { ArtisanException, Dictionary, value, ServiceProvider } from '@artisan-framework/core';
+import { ArtisanException, autowired, Dictionary, LoggerProvider, value } from '@artisan-framework/core';
 import {
+	EncryptionAlgorithm,
 	EncryptionProvider,
 	EncryptionProviderConfig,
 	ENCRYPTION_PROVIDER_CONFIG_KEY,
-	ENCRYPTION_PROVIDER_ORDER,
 } from './crypto-protocol';
 import crypto = require('crypto');
+
+// https://github.com/serviejs/keycrypt/blob/master/src/index.ts
 
 const replacer: Dictionary<string> = {
 	'/': '_',
@@ -19,87 +21,65 @@ const crypt = (cipher: crypto.Cipher | crypto.Decipher, data: Buffer): Buffer =>
 	return Buffer.concat([text, pad]);
 };
 
-export class ArtisanEncryptionProvider implements EncryptionProvider, ServiceProvider {
-	readonly config: Required<EncryptionProviderConfig>;
+export class ArtisanEncryptionProvider implements EncryptionProvider {
+	readonly algorithms: Array<Required<EncryptionAlgorithm>>;
+
+	@autowired({ token: LoggerProvider, optional: true })
+	private _logger?: LoggerProvider;
 
 	constructor(
 		@value(ENCRYPTION_PROVIDER_CONFIG_KEY)
 		config?: EncryptionProviderConfig,
 	) {
-		const keys = [...(config && config.keys)];
-
-		if (keys.length <= 0) {
-			throw new ArtisanException('keys must be provided');
-		}
-
-		this.config = {
-			keys,
-			hash: config?.hash || 'sha256',
-			cipher: config?.cipher || 'aes-256-cbc',
-		};
-	}
-	order(): number {
-		return ENCRYPTION_PROVIDER_ORDER;
+		this.algorithms = [...(config ? config.algorithms : [])].map((algorithm) => ({
+			...algorithm,
+			hmac: algorithm.hmac || 'sha256',
+			cipher: algorithm.cipher || 'aes-256-cbc',
+		}));
 	}
 
-	start(): Promise<void> {
-		throw new Error(`[encryption] started with #hash(${this.config.hash}) #cipher(${this.config.cipher})`);
+	encrypt(data: Buffer | string): Buffer {
+		const { cipher: algorithm, key, iv } = this._getAlgorithms()[0];
+
+		const cipher = crypto.createCipheriv(algorithm, key, iv);
+		return crypt(cipher, this._convertToBuffer(data));
 	}
 
-	stop(): Promise<void> {
-		throw new Error('[encryption] stopped');
-	}
-
-	/**
-	 * 加密数据
-	 *
-	 * @param data 需加密数据
-	 * @param [key] 加密钥匙，不传则代表使用默认的 `keys[0]`
-	 * @returns 密文
-	 */
-	encrypt(data: Buffer | string, key?: string): Buffer {
-		const pwd = key || this.config.keys[0];
-
-		const cipher = crypto.createCipher(this.config.cipher, pwd);
-
-		return crypt(cipher, this.convertToBuffer(data));
-	}
-
-	/**
-	 * 解密数据
-	 *
-	 * @param data 密文数据
-	 * @returns 明文
-	 */
 	decrypt(data: Buffer | string): Buffer | false {
-		for (const key of this.config.keys) {
-			const result = this.decryptData(this.convertToBuffer(data), key);
+		const algorithms = this._getAlgorithms();
+		const length = algorithms.length;
 
-			if (result !== false) {
-				return result;
+		for (let i = 0; i < length; i++) {
+			const { cipher: algorithm, key, iv } = algorithms[i];
+
+			try {
+				const decipher = crypto.createDecipheriv(algorithm, key, iv);
+				return crypt(decipher, this._convertToBuffer(data));
+			} catch (err) {
+				this._logger &&
+					this._logger.debug(`[encryption] decrypt data error at #${i}, length: ${length}`, {
+						error: err,
+					});
 			}
 		}
 
 		return false;
 	}
 
-	sign(data: Buffer | string, key?: string): string {
+	sign(data: Buffer | string): string {
 		// default to the first key
-		const pwd = key || this.config.keys[0];
-
-		return crypto
-			.createHmac(this.config.hash, pwd)
-			.update(data)
-			.digest('hex')
-			.replace(/\/|\+|=/g, (x) => replacer[x]);
+		const { hmac, key } = this._getAlgorithms()[0];
+		return this._sign(data, hmac, key);
 	}
 
 	verify(data: Buffer | string, digest: string): boolean {
-		const digestBuf = this.convertToBuffer(digest);
+		const digestBuf = this._convertToBuffer(digest);
 
-		for (const key of this.config.keys) {
-			const dataBuf = this.convertToBuffer(this.sign(data, key));
+		for (const { hmac, key } of this._getAlgorithms()) {
+			const dataBuf = this._convertToBuffer(this._sign(data, hmac, key));
 
+			// avoid timing attack
+			// https://coolshell.cn/articles/21003.html
 			if (digestBuf.length === dataBuf.length && crypto.timingSafeEqual(digestBuf, dataBuf)) {
 				return true;
 			}
@@ -108,17 +88,23 @@ export class ArtisanEncryptionProvider implements EncryptionProvider, ServicePro
 		return false;
 	}
 
-	private convertToBuffer(data: Buffer | string): Buffer {
-		return Buffer.isBuffer(data) ? data : Buffer.from(data);
+	private _getAlgorithms(): Array<Required<EncryptionAlgorithm>> {
+		if (this.algorithms.length <= 0) {
+			throw new ArtisanException(`config '${ENCRYPTION_PROVIDER_CONFIG_KEY}.algorithms' must be provided`);
+		}
+
+		return this.algorithms;
 	}
 
-	private decryptData(data: Buffer, key: string): Buffer | false {
-		try {
-			const cipher = crypto.createDecipher(this.config.cipher, key);
-			return crypt(cipher, data);
-		} catch (err) {
-			// debug('decrypt data error', err.stack || err);
-			return false;
-		}
+	private _sign(data: Buffer | string, hmac: string, key: string): string {
+		return crypto
+			.createHmac(hmac, key)
+			.update(data)
+			.digest('hex')
+			.replace(/\/|\+|=/g, (x) => replacer[x]);
+	}
+
+	private _convertToBuffer(data: Buffer | string): Buffer {
+		return Buffer.isBuffer(data) ? data : Buffer.from(data);
 	}
 }

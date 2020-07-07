@@ -1,9 +1,9 @@
 import http = require('http');
-import { WebContext, WEB_PROVIDER_CONFIG_KEY, WebProviderConfig } from '../web-protocol';
-import { sendToWormhole, detectErrorStatus, isProd, detectErrorMessage } from '../utils';
-import { ArtisanException, value } from '@artisan-framework/core';
+import { value } from '@artisan-framework/core';
 import { htmlEscape } from 'escape-goat';
-import { WebErrorHandler, DEFAULT_WEB_ERROR_HANDLER_ORDER } from './error-protocol';
+import { detectErrorMessage, detectErrorStatus, isProd } from '../utils';
+import { WebContext, WebProviderConfig, WEB_PROVIDER_CONFIG_KEY } from '../web-protocol';
+import { DEFAULT_WEB_ERROR_HANDLER_ORDER, WebErrorHandler } from './error-protocol';
 
 const isDev = !isProd();
 
@@ -85,40 +85,7 @@ export class ArtisanWebErrorHandler implements WebErrorHandler {
 	}
 
 	handle(ctx: WebContext, err: any): void {
-		if (err == null) return;
-
-		// ignore all pending request stream
-		if (ctx.req) {
-			sendToWormhole(ctx.req);
-		}
-
-		// wrap non-error object
-		if (!(err instanceof Error)) {
-			const newError = new ArtisanException('non-error thrown: ' + err);
-
-			// err maybe an object, try to copy the name, message and stack to the new error instance
-			if (err) {
-				if (err.name) newError.name = err.name;
-				if (err.message) newError.message = err.message;
-				if (err.stack) newError.stack = err.stack;
-				if (err.status) (newError as any).status = err.status;
-				if (err.headers) (newError as any).headers = err.headers;
-			}
-
-			err = newError;
-		}
-
-		const headerSent = ctx.headerSent || !ctx.writable;
-
-		// emit
-		ctx.app.emit('error', err, ctx);
-
-		// nothing we can do here other
-		// than delegate to the app-level
-		// handler and log.
-		if (headerSent) return;
-
-		err.status = ctx.status = detectErrorStatus(err);
+		ctx.status = detectErrorStatus(err);
 		ctx.set(err.headers);
 
 		const _accepts = ctx.accepts('html', 'text', 'json');
@@ -134,32 +101,41 @@ export class ArtisanWebErrorHandler implements WebErrorHandler {
 		if (['html', 'text'].includes(type) && this._config.onError?.errorPage) {
 			const _errorPage = this._config.onError?.errorPage;
 			const errorPage = typeof _errorPage === 'function' ? _errorPage(err, ctx) : _errorPage;
-			return ctx.redirect(errorPage);
-		}
-
-		if (type === 'html') {
-			ctx.body = HTML_ERROR.replace('{{status}}', htmlEscape(`${ctx.status}`)).replace(
-				'{{stack}}',
-				htmlEscape(err.stack),
-			);
-			ctx.type = 'html';
-		} else if (type === 'text') {
-			// unset all headers, and set those specified
-			(ctx.res as any)._headers = {};
-			ctx.set(err.headers);
-			ctx.body = message;
+			ctx.redirect(errorPage);
 		} else {
-			if (isDev) {
-				ctx.body = {
-					code: err.code || err.type,
-					message,
-					error_stack: err.stack,
-				};
+			// setType
+			ctx.type = type;
+
+			if (type === 'html') {
+				ctx.body = HTML_ERROR.replace('{{status}}', htmlEscape(`${ctx.status}`)).replace(
+					'{{stack}}',
+					htmlEscape(err.stack),
+				);
+			} else if (type === 'text') {
+				// unset all headers, and set those specified
+				if (typeof ctx.res.getHeaderNames === 'function') {
+					for (const name of ctx.res.getHeaderNames()) {
+						ctx.res.removeHeader(name);
+					}
+				} else {
+					(ctx.res as any)._headers = {};
+				}
+
+				ctx.set(err.headers);
+				ctx.body = message;
 			} else {
-				ctx.body = {
-					code: err.code || err.type,
-					message,
-				};
+				if (isDev) {
+					ctx.body = JSON.stringify({
+						code: err.code || err.type,
+						message,
+						error: err.stack,
+					});
+				} else {
+					ctx.body = JSON.stringify({
+						code: err.code || err.type,
+						message,
+					});
+				}
 			}
 		}
 

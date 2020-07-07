@@ -1,25 +1,36 @@
 import { createMockContext, Options } from '@shopify/jest-koa-mocks';
 import { Cookies, WebCookiesSetOptions } from '../src/cookies';
-import { ArtisanEncryptionProvider } from '@artisan-framework/crypto';
+import { ArtisanEncryptionProvider, EncryptionAlgorithm } from '@artisan-framework/crypto';
 import { Dictionary } from '@artisan-framework/core';
+import crypto = require('crypto');
 
 describe('cookies.test.ts', () => {
+	const createAlgorithm = (): EncryptionAlgorithm => ({
+		key: crypto.randomBytes(16).toString('hex'),
+		iv: crypto.randomBytes(8).toString('hex'),
+	});
+
+	const _encryptionAlgorithms = [createAlgorithm(), createAlgorithm()];
+
 	const createCookies = (
-		{ keys, ...options }: WebCookiesSetOptions & { keys?: string[] | false },
+		{ algorithms, ...options }: WebCookiesSetOptions & { algorithms?: EncryptionAlgorithm[] | false },
 		opts?: Options<Dictionary>,
 	): Cookies => {
-		const encrypter = keys === false ? undefined : new ArtisanEncryptionProvider({ keys: keys || ['key', 'keys'] });
-
 		const ctx = createMockContext({
 			url: options.secure ? 'https://abc.com' : 'http://abc.com',
 			...opts,
 		});
 
-		return new Cookies(ctx, encrypter);
+		return new Cookies(
+			ctx,
+			algorithms === false
+				? undefined
+				: new ArtisanEncryptionProvider({ algorithms: algorithms || _encryptionAlgorithms }),
+		);
 	};
 
 	it('should encrypt error when keys not present', () => {
-		const cookies = createCookies({ keys: false });
+		const cookies = createCookies({ algorithms: false });
 
 		expect(() => {
 			cookies.set('foo', 'bar', { encrypt: true });
@@ -46,7 +57,7 @@ describe('cookies.test.ts', () => {
 		const cookies = createCookies({});
 		cookies.set('foo', 'bar', { encrypt: true });
 		const cookie = cookies.ctx.response.headers['set-cookie'][0];
-		const newCookies = createCookies({ keys: ['another key'] }, { headers: { cookie } });
+		const newCookies = createCookies({ algorithms: [createAlgorithm()] }, { headers: { cookie } });
 		const value = newCookies.get('foo', { encrypt: true });
 		expect(value).toBe(undefined);
 	});
@@ -115,8 +126,12 @@ describe('cookies.test.ts', () => {
 	});
 
 	it('should update .sig if not match the first key', () => {
+		const hello = createAlgorithm();
+		const world = createAlgorithm();
+		const hi = createAlgorithm();
+
 		const cookies = createCookies(
-			{ keys: ['hello', 'world'] },
+			{ algorithms: [hello, world] },
 			{
 				headers: { cookie: 'foo=bar;foo.sig=bar.sig;' },
 			},
@@ -125,7 +140,7 @@ describe('cookies.test.ts', () => {
 		const cookie = cookies.ctx.response.headers['set-cookie'].join(';');
 
 		const newCookies = createCookies(
-			{ keys: ['hi', 'hello'] },
+			{ algorithms: [hi, hello] },
 			{
 				headers: { cookie },
 			},

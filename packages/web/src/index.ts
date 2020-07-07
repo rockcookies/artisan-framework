@@ -1,6 +1,7 @@
 import './init';
 export * from './cookies';
 export * from './session';
+export * from './trace';
 export * from './error';
 export {
 	WebProvider,

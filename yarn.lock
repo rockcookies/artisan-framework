@@ -538,10 +538,10 @@
     "@types/yargs" "^15.0.0"
     chalk "^4.0.0"
 
-"@koa/router@^9.0.1":
-  version "9.0.1"
-  resolved "https://registry.npm.taobao.org/@koa/router/download/@koa/router-9.0.1.tgz#4090a14223ea7e78aa13b632761209cba69acd95"
-  integrity sha1-QJChQiPqfniqE7YydhIJy6aazZU=
+"@koa/router@^9.1.0":
+  version "9.3.1"
+  resolved "https://registry.npm.taobao.org/@koa/router/download/@koa/router-9.3.1.tgz#814b0f357da616b99ee22259644cd928f2c9e60e"
+  integrity sha1-gUsPNX2mFrme4iJZZEzZKPLJ5g4=
   dependencies:
     debug "^4.1.1"
     http-errors "^1.7.3"
@@ -1676,6 +1676,11 @@
   integrity sha1-Yw15tNgsc+BD5D/3d6nKmNRXyrc=
   dependencies:
     "@types/superagent" "*"
+
+"@types/uuid@^8.0.0":
+  version "8.0.0"
+  resolved "https://registry.npm.taobao.org/@types/uuid/download/@types/uuid-8.0.0.tgz?cache=0&sync_timestamp=1589912819866&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2F%40types%2Fuuid%2Fdownload%2F%40types%2Fuuid-8.0.0.tgz#165aae4819ad2174a17476dbe66feebd549556c0"
+  integrity sha1-FlquSBmtIXShdHbb5m/uvVSVVsA=
 
 "@types/yargs-parser@*":
   version "15.0.0"
@@ -7753,10 +7758,10 @@ typedarray@^0.0.6:
   resolved "https://registry.npm.taobao.org/typedarray/download/typedarray-0.0.6.tgz#867ac74e3864187b1d3d47d996a78ec5c8830777"
   integrity sha1-hnrHTjhkGHsdPUfZlqeOxciDB3c=
 
-typescript@^3.9.5:
-  version "3.9.5"
-  resolved "https://registry.npm.taobao.org/typescript/download/typescript-3.9.5.tgz?cache=0&sync_timestamp=1592203629411&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Ftypescript%2Fdownload%2Ftypescript-3.9.5.tgz#586f0dba300cde8be52dd1ac4f7e1009c1b13f36"
-  integrity sha1-WG8NujAM3ovlLdGsT34QCcGxPzY=
+typescript@^3.9.6:
+  version "3.9.6"
+  resolved "https://registry.npm.taobao.org/typescript/download/typescript-3.9.6.tgz?cache=0&sync_timestamp=1593845241443&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Ftypescript%2Fdownload%2Ftypescript-3.9.6.tgz#8f3e0198a34c3ae17091b35571d3afd31999365a"
+  integrity sha1-jz4BmKNMOuFwkbNVcdOv0xmZNlo=
 
 uglify-js@^3.1.4:
   version "3.9.4"
@@ -7874,6 +7879,11 @@ uuid@^7.0.3:
   version "7.0.3"
   resolved "https://registry.npm.taobao.org/uuid/download/uuid-7.0.3.tgz#c5c9f2c8cf25dc0a372c4df1441c41f5bd0c680b"
   integrity sha1-xcnyyM8l3Ao3LE3xRBxB9b0MaAs=
+
+uuid@^8.2.0:
+  version "8.2.0"
+  resolved "https://registry.npm.taobao.org/uuid/download/uuid-8.2.0.tgz?cache=0&sync_timestamp=1592944298186&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Fuuid%2Fdownload%2Fuuid-8.2.0.tgz#cb10dd6b118e2dada7d0cd9730ba7417c93d920e"
+  integrity sha1-yxDdaxGOLa2n0M2XMLp0F8k9kg4=
 
 v8-compile-cache@^2.0.3:
   version "2.1.1"

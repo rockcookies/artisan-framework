@@ -3,6 +3,7 @@ import { WebProvider } from './web-protocol';
 import { ArtisanWebProvider } from './artisan-web-provider';
 import { ArtisanWebSessionProvider, WebSessionProvider } from './session';
 import { WebErrorHandler, ArtisanWebErrorHandler } from './error';
+import { WebTraceProvider, ArtisanWebTraceProvider } from './trace';
 
 function init() {
 	// web
@@ -12,7 +13,10 @@ function init() {
 	// session
 	globalContainer.registerClass(WebSessionProvider, ArtisanWebSessionProvider);
 
-	// console.error
+	// trace
+	globalContainer.registerClass(WebTraceProvider, ArtisanWebTraceProvider);
+
+	// onError
 	globalContainer.registerClass(WebErrorHandler, ArtisanWebErrorHandler);
 }
 

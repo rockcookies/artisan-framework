@@ -72,9 +72,9 @@ export class Cookies implements WebCookies {
 		}
 
 		// http://browsercookielimits.squawky.net/
-		/* if (value.length > 4093) {
-			this.app.emit('cookieLimitExceed', { name, value, ctx: this.ctx });
-		} */
+		if (value.length > 4093) {
+			this.ctx.logger && this.ctx.logger.debug('[web] cookieLimitExceed', { name, value });
+		}
 
 		// https://github.com/linsight/should-send-same-site-none
 		// fixed SameSite=None: Known Incompatible Clients

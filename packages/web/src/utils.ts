@@ -13,16 +13,17 @@ export function isProd(): boolean {
 }
 
 export function detectErrorStatus(err: any): number {
-	if (err.code === 'ENOENT') {
-		return 404;
+	const status = err.status;
+
+	// invalid status consider as 500, like urllib will return -1 status
+	if (status == null || status < 200) {
+		if (err.code === 'ENOENT') {
+			return 404;
+		}
+
+		return 500;
 	}
 
-	// detect status
-	let status = err.status || 500;
-	if (status < 200) {
-		// invalid status consider as 500, like urllib will return -1 status
-		status = 500;
-	}
 	return status;
 }
 
@@ -35,5 +36,6 @@ export function detectErrorMessage(ctx: WebContext, err: any): string {
 	) {
 		return 'Problems parsing JSON';
 	}
+
 	return err.message;
 }

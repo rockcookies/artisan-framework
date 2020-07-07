@@ -1,3 +1,5 @@
+// thanks for: https://github.com/open-telemetry/opentelemetry-js/blob/master/packages/opentelemetry-api/src/trace/span_context.ts
+
 export interface TraceContext {
 	/**
 	 * The ID of the trace that this span belongs to. It is worldwide unique
@@ -12,4 +14,8 @@ export interface TraceContext {
 	 * lowercase hex characters corresponding to 64 bits.
 	 */
 	spanId: string;
+	/**
+	 * Only true if the SpanContext was propagated from a remote parent.
+	 */
+	isRemote?: boolean;
 }

@@ -1,4 +1,4 @@
-import { DependencyContainer, LoggerProvider, Ordered, Dictionary } from '@artisan-framework/core';
+import { DependencyContainer, LoggerProvider, Ordered, Dictionary, TraceContext } from '@artisan-framework/core';
 import { RouterOptions } from '@koa/router';
 import { IKoaBodyOptions } from 'koa-body';
 import { WebCookies } from './cookies';
@@ -8,6 +8,7 @@ import { WebOnErrorOptions } from './error';
 import Router = require('@koa/router');
 import { IncomingMessage, ServerResponse } from 'http';
 import { Http2ServerRequest, Http2ServerResponse } from 'http2';
+import { WebTraceOptions } from './trace';
 
 export const WebProvider = Symbol('Artisan#WebProvider');
 
@@ -20,6 +21,8 @@ export const WEB_PROVIDER_ORDER = 8000;
 export interface ServerOptions {
 	port?: number;
 	hostname?: string;
+	keepAliveTimeout?: number;
+
 	proxy?: boolean;
 	proxyIpHeader?: string;
 	maxIpsCount?: number;
@@ -33,6 +36,7 @@ export interface WebProviderConfig {
 	body?: IKoaBodyOptions;
 	router?: RouterOptions;
 	session?: WebSessionOptions;
+	trace?: WebTraceOptions;
 	onError?: WebOnErrorOptions;
 }
 
@@ -43,10 +47,11 @@ export type WebCallback = (
 
 declare module 'koa' {
 	interface Context extends Koa.ParameterizedContext {
-		cookies: WebCookies;
 		container: DependencyContainer;
 		logger: LoggerProvider;
+		cookies: WebCookies;
 		session: WebSession;
+		trace: TraceContext;
 	}
 }
 
