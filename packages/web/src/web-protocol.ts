@@ -18,7 +18,7 @@ export const WEB_PROVIDER_CONFIG_KEY = 'artisan.web';
 
 export const WEB_PROVIDER_ORDER = 8000;
 
-export interface ServerOptions {
+export interface WebServerOptions {
 	port?: number;
 	hostname?: string;
 	keepAliveTimeout?: number;
@@ -32,7 +32,7 @@ export interface ServerOptions {
 }
 
 export interface WebProviderConfig {
-	server?: ServerOptions;
+	server?: WebServerOptions;
 	body?: IKoaBodyOptions;
 	router?: RouterOptions;
 	session?: WebSessionOptions;
@@ -52,6 +52,7 @@ declare module 'koa' {
 		cookies: WebCookies;
 		session: WebSession;
 		trace: TraceContext;
+		startTime: number;
 	}
 }
 

@@ -18,6 +18,7 @@ import {
 	WEB_PROVIDER_ORDER,
 	WebContext,
 	WebProvider,
+	WebServerOptions,
 	WebCallback,
 } from './web-protocol';
 import KoaRouter = require('@koa/router');
@@ -25,16 +26,34 @@ import Koa = require('koa');
 import KoaBody = require('koa-body');
 import { WebErrorHandler } from './error';
 import { WebTraceProvider, WebTraceOptions } from './trace';
-import { ServerOptions } from 'https';
 
 const ArtisanLogger = Symbol('Artisan#Logger');
 const ArtisanCookies = Symbol('Artisan#Cookies');
 const ArtisanSession = Symbol('Artisan#Session');
 const ArtisanContainer = Symbol('Artisan#Container');
 
-function useMeta(config: ServerOptions) {
+function useMeta(config?: WebServerOptions): Koa.Middleware<any, WebContext> {
 	// https://www.yuque.com/egg/nodejs/keep-alive-agent-econnreset
 	// https://github.com/eggjs/egg/blob/master/app/middleware/meta.js
+
+	const keepAliveTimeout = config?.keepAliveTimeout != null ? config.keepAliveTimeout : 4000;
+
+	return async function metaMiddleware(ctx, next) {
+		ctx.startTime = Date.now();
+
+		try {
+			await next();
+		} catch (err) {
+			throw err;
+		} finally {
+			ctx.set('x-response-time', `${Date.now() - ctx.startTime}`);
+
+			if (keepAliveTimeout >= 1000 && ctx.header.connection !== 'close') {
+				const timeout = Math.floor(keepAliveTimeout / 1000);
+				ctx.set('keep-alive', `timeout=${timeout}`);
+			}
+		}
+	};
 }
 
 function useSession(sessionProvider: WebSessionProvider): Koa.Middleware<any, WebContext> {
@@ -209,6 +228,9 @@ export class ArtisanWebProvider implements ServiceProvider, WebProvider {
 	}
 
 	protected _setup() {
+		// meta
+		this.server.use(useMeta(this.config.server));
+
 		// body
 		this.server.use(KoaBody(this.config.body));
 

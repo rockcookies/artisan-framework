@@ -8,7 +8,7 @@ export {
 	WebMiddleware,
 	WEB_PROVIDER_CONFIG_KEY,
 	WEB_PROVIDER_ORDER,
-	ServerOptions,
+	WebServerOptions,
 	WebProviderConfig,
 	WebContext,
 } from './web-protocol';
