@@ -4,23 +4,24 @@ import _is from '@sindresorhus/is';
 export const is = _is;
 export {
 	AdvisorMethodOptions,
-	AdvisorFactoryOptions,
 	beforeMethod,
 	afterAsyncMethodReturning,
 	afterSyncMethodReturning,
 	afterAsyncMethodThrows,
 	afterSyncMethodThrows,
-	beforeFactory,
 } from './decorators/advice';
 export {
+	ValueOptions,
+	value,
+	postConstruct,
 	autowired,
 	autowiredAll,
 	AutowiredAllOptions,
 	AutowiredOptions,
 	lazy,
 	LazyConstructor,
-} from './decorators/autowired';
-export { ValueOptions, value } from './decorators/value';
+	formatInjectionToken,
+} from './decorators/object';
 export { AbstractConfigProvider } from './abstract-config-provider';
 export {
 	ConfigProvider,
@@ -28,7 +29,6 @@ export {
 	ObjectFactory,
 	InjectionToken,
 	InjectableScope,
-	FactoryInvokeContext,
 	MethodInvokeContext,
 	Ordered,
 } from './container-protocol';

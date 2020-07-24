@@ -2,10 +2,12 @@ import {
 	afterAsyncMethodReturning,
 	afterAsyncMethodThrows,
 	afterSyncMethodReturning,
-	beforeMethod,
 	ArtisanContainerProvider,
+	beforeMethod,
 	MethodInvokeContext,
-} from '../src/index';
+	Ordered,
+	afterSyncMethodThrows,
+} from '../src';
 
 describe('advisor', () => {
 	const container = new ArtisanContainerProvider();
@@ -44,6 +46,73 @@ describe('advisor', () => {
 	beforeEach(() => {
 		container.reset();
 		container.registerClass(Target, Target);
+	});
+
+	it('test simple', async () => {
+		const beforeMethodFn = jest.fn();
+		const afterSyncMethodReturningFn = jest.fn();
+		const afterSyncMethodThrowsFn = jest.fn();
+		const afterAsyncMethodReturningFn = jest.fn();
+		const afterAsyncMethodThrowsFn = jest.fn();
+		const asyncThrowFn = jest.fn();
+		const asyncRejectFn = jest.fn();
+
+		class Advice {
+			@beforeMethod()
+			beforeMethod() {
+				beforeMethodFn();
+			}
+
+			@afterSyncMethodReturning()
+			afterSyncMethodReturning() {
+				afterSyncMethodReturningFn();
+			}
+
+			@afterSyncMethodThrows()
+			afterSyncMethodThrows() {
+				afterSyncMethodThrowsFn();
+			}
+
+			@afterAsyncMethodReturning({})
+			afterAsyncMethodReturning() {
+				afterAsyncMethodReturningFn();
+			}
+
+			@afterAsyncMethodThrows({})
+			afterAsyncMethodThrows() {
+				afterAsyncMethodThrowsFn();
+			}
+		}
+
+		const target = container.resolve(Target);
+		container.registerAdvisor(Advice);
+
+		target.bar();
+		await target.foo();
+
+		expect(() => {
+			target.syncThrow();
+		}).toThrow();
+
+		try {
+			await target.asyncReject();
+		} catch (e) {
+			asyncThrowFn(e);
+		}
+
+		try {
+			await target.asyncReject();
+		} catch (e) {
+			asyncRejectFn(e);
+		}
+
+		expect(beforeMethodFn).toBeCalledTimes(5);
+		expect(afterSyncMethodReturningFn).toBeCalledTimes(1);
+		expect(afterSyncMethodThrowsFn).toBeCalledTimes(1);
+		expect(afterAsyncMethodReturningFn).toBeCalledTimes(1);
+		expect(afterAsyncMethodThrowsFn).toBeCalledTimes(2);
+		expect(asyncThrowFn).toBeCalledTimes(1);
+		expect(asyncRejectFn).toBeCalledTimes(1);
 	});
 
 	it('beforeMethod', async () => {
@@ -154,5 +223,42 @@ describe('advisor', () => {
 		expect(asyncThrowException).toBe('async-throw');
 		expect(asyncRejectContext.exception).toBe('reject');
 		expect(asyncThrowContext.exception).toBe('async-throw');
+	});
+
+	it('test order', () => {
+		const result: string[] = [];
+
+		class AdviceA implements Ordered {
+			order() {
+				return 2;
+			}
+
+			@beforeMethod()
+			before() {
+				result.push('a');
+			}
+		}
+
+		class AdviceB implements Ordered {
+			order() {
+				return 1;
+			}
+
+			@beforeMethod()
+			before() {
+				result.push('b');
+			}
+		}
+
+		container.registerAdvisor(AdviceA);
+		container.registerAdvisor(AdviceB);
+
+		const target = container.resolve(Target);
+
+		target.bar();
+
+		expect(result.length).toBe(2);
+		expect(result[0]).toBe('b');
+		expect(result[1]).toBe('a');
 	});
 });

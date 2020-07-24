@@ -3,8 +3,12 @@ import { WebContext } from './web-protocol';
 //@ts-ignore
 import _sendToWormhole = require('stream-wormhole');
 
-export function sendToWormhole(stream: any, throwError?: boolean): Promise<void> {
-	return _sendToWormhole(stream, throwError);
+export async function sendToWormhole(stream: any, throwError?: boolean): Promise<void> {
+	if (!stream) {
+		return;
+	}
+
+	return await _sendToWormhole(stream, throwError);
 }
 
 export function isProd(): boolean {

@@ -1,105 +1,60 @@
 import {
 	autowired,
+	autowiredAll,
+	DependencyContainer,
+	Dictionary,
 	LoggerProvider,
 	ServiceProvider,
 	value,
-	autowiredAll,
-	Dictionary,
-	DependencyContainer,
+	postConstruct,
 } from '@artisan-framework/core';
 import { EncryptionProvider } from '@artisan-framework/crypto';
 import { createHttpTerminator, HttpTerminator } from 'http-terminator';
 import { Cookies } from './cookies';
+import { WebErrorHandler } from './error';
 import { WebSessionProvider } from './session';
+import { WebTraceProvider } from './trace';
 import { detectErrorStatus, sendToWormhole } from './utils';
 import {
+	WebContext,
+	WebProvider,
 	WebProviderConfig,
 	WEB_PROVIDER_CONFIG_KEY,
 	WEB_PROVIDER_ORDER,
-	WebContext,
-	WebProvider,
-	WebServerOptions,
-	WebCallback,
+	WebInitializationProvider,
 } from './web-protocol';
 import KoaRouter = require('@koa/router');
 import Koa = require('koa');
 import KoaBody = require('koa-body');
-import { WebErrorHandler } from './error';
-import { WebTraceProvider, WebTraceOptions } from './trace';
+import { useMeta } from './middleware/meta';
+import { useNotFound } from './middleware/not-found';
+import { useTrace } from './middleware/trace';
+import { useSession } from './middleware/session';
+import { useStatic } from './middleware/static';
+import { IncomingMessage, ServerResponse } from 'http';
+import { Http2ServerRequest, Http2ServerResponse } from 'http2';
 
 const ArtisanLogger = Symbol('Artisan#Logger');
 const ArtisanCookies = Symbol('Artisan#Cookies');
 const ArtisanSession = Symbol('Artisan#Session');
 const ArtisanContainer = Symbol('Artisan#Container');
 
-function useMeta(config?: WebServerOptions): Koa.Middleware<any, WebContext> {
-	// https://www.yuque.com/egg/nodejs/keep-alive-agent-econnreset
-	// https://github.com/eggjs/egg/blob/master/app/middleware/meta.js
-
-	const keepAliveTimeout = config?.keepAliveTimeout != null ? config.keepAliveTimeout : 4000;
-
-	return async function metaMiddleware(ctx, next) {
-		ctx.startTime = Date.now();
-
-		try {
-			await next();
-		} catch (err) {
-			throw err;
-		} finally {
-			ctx.set('x-response-time', `${Date.now() - ctx.startTime}`);
-
-			if (keepAliveTimeout >= 1000 && ctx.header.connection !== 'close') {
-				const timeout = Math.floor(keepAliveTimeout / 1000);
-				ctx.set('keep-alive', `timeout=${timeout}`);
-			}
-		}
-	};
-}
-
-function useSession(sessionProvider: WebSessionProvider): Koa.Middleware<any, WebContext> {
-	return async function sessionMiddleware(ctx, next) {
-		try {
-			await next();
-		} catch (err) {
-			throw err;
-		} finally {
-			const session = (ctx as any)[ArtisanSession];
-
-			if (session) {
-				await sessionProvider.commit(ctx, session);
-			}
-		}
-	};
-}
-
-function useTrace(traceProvider: WebTraceProvider, _config?: WebTraceOptions): Koa.Middleware<any, WebContext> {
-	const config: Required<Pick<WebTraceOptions, 'traceIdResponseField' | 'traceSpanIdResponseField'>> = {
-		traceIdResponseField: _config?.traceIdResponseField || 'x-trace-id',
-		traceSpanIdResponseField: _config?.traceSpanIdResponseField || 'x-trace-span-id',
-	};
-
-	return async function traceMiddleware(ctx, next) {
-		ctx.trace = await traceProvider.resolve(ctx);
-
-		ctx.set(config.traceIdResponseField, ctx.trace.traceId);
-		ctx.set(config.traceSpanIdResponseField, ctx.trace.spanId);
-
-		ctx.logger = ctx.logger.with({
-			trace: ctx.trace,
-		});
-
-		await next();
-	};
-}
+type WebCallback = (
+	req: IncomingMessage | Http2ServerRequest,
+	res: ServerResponse | Http2ServerResponse,
+) => Promise<void>;
 
 export class ArtisanWebProvider implements ServiceProvider, WebProvider {
 	server: Koa<Dictionary, WebContext>;
-	router: KoaRouter;
-
-	@autowired(LoggerProvider)
-	logger: LoggerProvider;
+	router: KoaRouter<Dictionary, WebContext>;
 
 	private _terminator?: HttpTerminator;
+
+	@autowired(LoggerProvider)
+	public logger: LoggerProvider;
+
+	@value(WEB_PROVIDER_CONFIG_KEY)
+	private _config?: WebProviderConfig;
 
 	@autowired(DependencyContainer)
 	private _container: DependencyContainer;
@@ -116,28 +71,24 @@ export class ArtisanWebProvider implements ServiceProvider, WebProvider {
 	@autowiredAll(WebErrorHandler)
 	private _errorHandlers: WebErrorHandler[];
 
-	constructor(
-		@value({ el: WEB_PROVIDER_CONFIG_KEY, default: {} })
-		public readonly config: WebProviderConfig,
-	) {
-		this._init(config);
-	}
+	@autowired({ token: WebInitializationProvider, optional: true })
+	private _initializationProvider?: WebInitializationProvider;
 
 	order(): number {
 		return WEB_PROVIDER_ORDER;
 	}
 
-	callback(): WebCallback {
-		this._setup();
+	async callback(): Promise<WebCallback> {
+		await this._setup();
 		return this.server.callback();
 	}
 
 	async start(): Promise<void> {
-		const config = this.config || {};
+		const config = this._config || {};
 		const port = config.server?.port || 4001;
 		const hostname = config.server?.hostname || '0.0.0.0';
 
-		this._setup();
+		await this._setup();
 
 		// terminator
 		const server = this.server.listen(port, hostname);
@@ -145,7 +96,7 @@ export class ArtisanWebProvider implements ServiceProvider, WebProvider {
 			server,
 		});
 
-		this.logger.info(`[web] started at ${port}`);
+		this.logger.info(`[web] started at ${hostname}:${port}`);
 	}
 
 	async stop(): Promise<void> {
@@ -156,7 +107,10 @@ export class ArtisanWebProvider implements ServiceProvider, WebProvider {
 		this.logger.info('[web] stopped');
 	}
 
-	protected _init(config: WebProviderConfig) {
+	@postConstruct()
+	_init() {
+		const config: WebProviderConfig = this._config || {};
+
 		// koa
 		this.server = new Koa();
 
@@ -227,21 +181,27 @@ export class ArtisanWebProvider implements ServiceProvider, WebProvider {
 		})(this);
 	}
 
-	protected _setup() {
+	protected async _setup() {
+		const config: WebProviderConfig = this._config || {};
+		const initializationProvider = this._initializationProvider;
+
 		// meta
-		this.server.use(useMeta(this.config.server));
+		this.server.use(useMeta(config.server));
+
+		// static
+		this.server.use(useStatic(config.static || {}, { logger: this.logger }));
+
+		// notFound
+		this.server.use(useNotFound(config.onError));
 
 		// body
-		this.server.use(KoaBody(this.config.body));
+		this.server.use(KoaBody(config.body));
 
 		// trace
-		this.server.use(useTrace(this._traceProvider, this.config.trace));
+		this.server.use(useTrace(this._traceProvider, config.trace));
 
 		// session
-		this.server.use(useSession(this._sessionProvider));
-
-		// router
-		this.server.use(this.router.routes());
+		this.server.use(useSession(this._sessionProvider, ArtisanSession));
 
 		// error handler
 		const errorHandlers = [...this._errorHandlers].sort((a, b) => b.order() - a.order());
@@ -250,6 +210,14 @@ export class ArtisanWebProvider implements ServiceProvider, WebProvider {
 				web._onContextError(this, err, errorHandlers);
 			};
 		})(this);
+
+		// initialization
+		if (initializationProvider) {
+			await initializationProvider.initWebProvider(this);
+		}
+
+		// router
+		this.server.use(this.router.routes());
 	}
 
 	protected _onContextError(ctx: WebContext, err: any, handlers: WebErrorHandler[]) {

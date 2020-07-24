@@ -1,6 +1,7 @@
 import { ArtisanException } from '../error';
 import { Constructor, Dictionary } from '../interfaces';
 import { recursiveGetMetadata } from '../utils/reflect-helper';
+import { ArtisanContainerProvider } from './artisan-container-provider';
 import {
 	AdvisorRegistry,
 	ClassRegistrationOptions,
@@ -14,14 +15,28 @@ import {
 	TAGGED_ADVISOR_PROPERTY,
 	TAGGED_PARAMETER,
 	TAGGED_PROPERTY,
+	TAGGED_POST_CONSTRUCT,
 } from './container-protocol';
-import { LazyConstructor } from './decorators/autowired';
+import { LazyConstructor } from './decorators/object';
 import { CIRCULAR_PARAMETER_DEPENDENCY } from './error-messages';
 
 const AdvisorToken = Symbol('Artisan#Advisor');
 
 export class Registry {
-	private _registries = new Map<InjectionToken, ServiceRegistry[]>();
+	private _registries: Map<InjectionToken, ServiceRegistry[]>;
+	private _containerRegistries: ServiceRegistry[];
+
+	constructor(container: ArtisanContainerProvider) {
+		this._registries = new Map<InjectionToken, ServiceRegistry[]>();
+
+		this._containerRegistries = [
+			{
+				type: 'constant',
+				token: DependencyContainer,
+				constant: container,
+			},
+		];
+	}
 
 	/** 注册类 */
 	registerClass<T>(token: InjectionToken, clz: Constructor<T>, options?: ClassRegistrationOptions): Registry {
@@ -32,23 +47,13 @@ export class Registry {
 			clz,
 			constructorArgs: this._resolveConstructorDeps(clz),
 			properties: this._resolvePropertyDeps(clz),
+			postConstructMethod: this._resolvePostConstructMethod(clz),
 		});
 	}
 
 	/** AOP观察者 */
 	registerAdvisor<T>(clz: Constructor<T>): Registry {
-		const advisorProperty = recursiveGetMetadata<Partial<AdvisorRegistry>>(
-			TAGGED_ADVISOR_PROPERTY,
-			clz,
-		).reduceRight((a: any, b: any): Partial<AdvisorRegistry> => {
-			const output: any = { ...a };
-
-			for (const key in b) {
-				output[key] = { ...a[key], ...b[key] };
-			}
-
-			return output;
-		}, {});
+		const advisorProperty: Partial<AdvisorRegistry> = Reflect.getMetadata(TAGGED_ADVISOR_PROPERTY, clz);
 
 		return this._put(AdvisorToken, {
 			...advisorProperty,
@@ -58,6 +63,7 @@ export class Registry {
 			clz,
 			constructorArgs: this._resolveConstructorDeps(clz),
 			properties: this._resolvePropertyDeps(clz),
+			postConstructMethod: this._resolvePostConstructMethod(clz),
 		});
 	}
 
@@ -79,6 +85,15 @@ export class Registry {
 			type: 'constant',
 			token,
 			constant,
+		});
+	}
+
+	/** 注册变量 */
+	registerDynamic<T>(token: InjectionToken, dynamic: (dependencyContainer: DependencyContainer) => T): Registry {
+		return this._put(token, {
+			type: 'dynamic',
+			token,
+			dynamic,
 		});
 	}
 
@@ -117,6 +132,10 @@ export class Registry {
 	}
 
 	getAll(token: InjectionToken): ServiceRegistry[] | undefined {
+		if (token === DependencyContainer) {
+			return this._containerRegistries;
+		}
+
 		return this._registries.get(token);
 	}
 
@@ -126,6 +145,20 @@ export class Registry {
 
 	clear() {
 		this._registries.clear();
+	}
+
+	clone(container: ArtisanContainerProvider): Registry {
+		const registry = new Registry(container);
+
+		for (const [token, registries] of this._registries) {
+			registry._registries.set(token, [...registries]);
+		}
+
+		return registry;
+	}
+
+	private _resolvePostConstructMethod(clz: Constructor<any>): string | undefined {
+		return Reflect.getMetadata(TAGGED_POST_CONSTRUCT, clz);
 	}
 
 	/** 解析构造函数依赖 */

@@ -1,7 +1,6 @@
-import { autowired, lazy, autowiredAll } from '../src/container/decorators/autowired';
+import { autowired, autowiredAll, InjectableScope, lazy, DependencyContainer, postConstruct } from '../src';
 import { ArtisanContainerProvider } from '../src/container/artisan-container-provider';
 import { DUPLICATED_PARAMETER_METADATA, NOT_REGISTERED } from '../src/container/error-messages';
-import { InjectableScope } from '../src';
 
 interface IBar {
 	value: string;
@@ -360,5 +359,32 @@ describe('artisan-container-provider.test.ts', () => {
 		expect(c.a === a).toBeTruthy();
 		expect(b.a === a).toBeTruthy();
 		expect(c.b !== b).toBeTruthy();
+	});
+
+	it('test clone', () => {
+		const newContainer = container.clone();
+
+		const cA = container.resolve(DependencyContainer);
+		const cB = newContainer.resolve(DependencyContainer);
+
+		expect(newContainer !== container).toBeTruthy();
+		expect(cA === container).toBeTruthy();
+		expect(cB === newContainer).toBeTruthy();
+	});
+
+	it('test @postConstruct', () => {
+		const initFn = jest.fn();
+
+		class A {
+			@postConstruct()
+			init() {
+				initFn();
+			}
+		}
+
+		container.registerClass(A, A);
+		container.resolve(A);
+
+		expect(initFn).toBeCalled();
 	});
 });

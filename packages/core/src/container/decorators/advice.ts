@@ -1,6 +1,5 @@
-import { InjectionToken, DependencyContainer } from '../container-protocol';
-import { Constructor } from '../../interfaces';
-import { tagAdvisorProperty } from '../decorator-helper';
+import { Constructor, Dictionary } from '../../interfaces';
+import { InjectionToken, TAGGED_ADVISOR_PROPERTY } from '../container-protocol';
 
 export interface AdvisorMethodOptions {
 	tokens?: Array<InjectionToken | RegExp>;
@@ -11,14 +10,28 @@ export interface AdvisorMethodOptions {
 	methodNamePattern?: RegExp;
 }
 
-export interface AdvisorFactoryOptions {
-	tokens?: Array<InjectionToken | RegExp>;
-	factories?: Array<(dependencyContainer: DependencyContainer) => (...args: any[]) => any>;
+function tagAdvisorProperty(target: any, metadata: Dictionary): any {
+	let result: Dictionary = {};
+
+	if (Reflect.hasMetadata(TAGGED_ADVISOR_PROPERTY, target)) {
+		result = Reflect.getMetadata(TAGGED_ADVISOR_PROPERTY, target);
+	}
+
+	for (const key in metadata) {
+		result[key] = {
+			...(result[key] || {}),
+			...(metadata[key] || {}),
+		};
+	}
+
+	Reflect.defineMetadata(TAGGED_ADVISOR_PROPERTY, result, target);
+
+	return target;
 }
 
 export function beforeMethod(options: AdvisorMethodOptions = {}) {
 	return function beforeMethod(target: any, propertyKey: string) {
-		tagAdvisorProperty(target, {
+		tagAdvisorProperty(target.constructor, {
 			beforeMethod: { [propertyKey]: options },
 		});
 	};
@@ -26,7 +39,7 @@ export function beforeMethod(options: AdvisorMethodOptions = {}) {
 
 export function afterAsyncMethodReturning(options: AdvisorMethodOptions = {}) {
 	return function afterAsyncMethodReturning(target: any, propertyKey: string) {
-		tagAdvisorProperty(target, {
+		tagAdvisorProperty(target.constructor, {
 			afterAsyncMethodReturning: { [propertyKey]: options },
 		});
 	};
@@ -34,7 +47,7 @@ export function afterAsyncMethodReturning(options: AdvisorMethodOptions = {}) {
 
 export function afterSyncMethodReturning(options: AdvisorMethodOptions = {}) {
 	return function afterSyncMethodReturning(target: any, propertyKey: string) {
-		tagAdvisorProperty(target, {
+		tagAdvisorProperty(target.constructor, {
 			afterSyncMethodReturning: { [propertyKey]: options },
 		});
 	};
@@ -42,7 +55,7 @@ export function afterSyncMethodReturning(options: AdvisorMethodOptions = {}) {
 
 export function afterAsyncMethodThrows(options: AdvisorMethodOptions = {}) {
 	return function afterAsyncMethodThrows(target: any, propertyKey: string) {
-		tagAdvisorProperty(target, {
+		tagAdvisorProperty(target.constructor, {
 			afterAsyncMethodThrows: { [propertyKey]: options },
 		});
 	};
@@ -50,48 +63,8 @@ export function afterAsyncMethodThrows(options: AdvisorMethodOptions = {}) {
 
 export function afterSyncMethodThrows(options: AdvisorMethodOptions = {}) {
 	return function afterSyncMethodThrows(target: any, propertyKey: string) {
-		tagAdvisorProperty(target, {
+		tagAdvisorProperty(target.constructor, {
 			afterSyncMethodThrows: { [propertyKey]: options },
-		});
-	};
-}
-
-export function beforeFactory(options: AdvisorFactoryOptions = {}) {
-	return function beforeFactory(target: any, propertyKey: string) {
-		tagAdvisorProperty(target, {
-			beforeFactory: { [propertyKey]: options },
-		});
-	};
-}
-
-export function afterAsyncFactoryReturning(options: AdvisorFactoryOptions = {}) {
-	return function afterAsyncFactoryReturning(target: any, propertyKey: string) {
-		tagAdvisorProperty(target, {
-			afterAsyncFactoryReturning: { [propertyKey]: options },
-		});
-	};
-}
-
-export function afterSyncFactoryReturning(options: AdvisorFactoryOptions = {}) {
-	return function afterSyncFactoryReturning(target: any, propertyKey: string) {
-		tagAdvisorProperty(target, {
-			afterSyncFactoryReturning: { [propertyKey]: options },
-		});
-	};
-}
-
-export function afterAsyncFactoryThrows(options: AdvisorFactoryOptions = {}) {
-	return function afterAsyncFactoryThrows(target: any, propertyKey: string) {
-		tagAdvisorProperty(target, {
-			afterAsyncFactoryThrows: { [propertyKey]: options },
-		});
-	};
-}
-
-export function afterSyncFactoryThrows(options: AdvisorFactoryOptions = {}) {
-	return function afterSyncFactoryThrows(target: any, propertyKey: string) {
-		tagAdvisorProperty(target, {
-			afterSyncFactoryThrows: { [propertyKey]: options },
 		});
 	};
 }

@@ -1,13 +1,13 @@
-import { WebTraceProvider, WebTraceOptions } from './trace-protocol';
-import { WebContext, WEB_PROVIDER_CONFIG_KEY, WebProviderConfig } from '../web-protocol';
 import { TraceContext, value } from '@artisan-framework/core';
+import { WebContext, WebProviderConfig, WEB_PROVIDER_CONFIG_KEY } from '../web-protocol';
+import { WebTraceOptions, WebTraceProvider } from './trace-protocol';
 import crypto = require('crypto');
 
 export class ArtisanWebTraceProvider implements WebTraceProvider {
 	private options: Required<Pick<WebTraceOptions, 'traceIdRequestField' | 'traceSpanIdRequestField'>>;
 
 	constructor(
-		@value({ el: WEB_PROVIDER_CONFIG_KEY, default: {} })
+		@value(WEB_PROVIDER_CONFIG_KEY)
 		config?: WebProviderConfig,
 	) {
 		const opts = config?.trace || {};
