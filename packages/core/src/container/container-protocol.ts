@@ -1,12 +1,14 @@
 import { Constructor, Dictionary } from '../interfaces';
-import { LazyConstructor } from './decorators/autowired';
-import { AdvisorMethodOptions, AdvisorFactoryOptions } from './decorators/advice';
+import { LazyConstructor } from './decorators/object';
+import { AdvisorMethodOptions } from './decorators/advice';
 
 export const TAGGED_PARAMETER = 'artisan:tagged_parameter';
 
 export const TAGGED_PROPERTY = 'artisan:tagged_property';
 
 export const TAGGED_CLASS = 'artisan:tagged_class';
+
+export const TAGGED_POST_CONSTRUCT = 'artisan:tagged_post_construct';
 
 export const TAGGED_ADVISOR_PROPERTY = 'artisan:tagged_advisor_property';
 
@@ -50,6 +52,7 @@ export interface ClassRegistry {
 	token: InjectionToken;
 	scope: InjectableScope;
 	clz: Constructor<any>;
+	postConstructMethod?: string;
 	constructorArgs: Array<TaggedMetadata | undefined>;
 	properties: Dictionary<TaggedMetadata>;
 }
@@ -61,11 +64,6 @@ export interface AdvisorRegistry extends Omit<ClassRegistry, 'type'> {
 	afterSyncMethodReturning?: Dictionary<AdvisorMethodOptions>;
 	afterAsyncMethodThrows?: Dictionary<AdvisorMethodOptions>;
 	afterSyncMethodThrows?: Dictionary<AdvisorMethodOptions>;
-	beforeFactory?: Dictionary<AdvisorFactoryOptions>;
-	afterAsyncFactoryReturning?: Dictionary<AdvisorFactoryOptions>;
-	afterSyncFactoryReturning?: Dictionary<AdvisorFactoryOptions>;
-	afterAsyncFactoryThrows?: Dictionary<AdvisorFactoryOptions>;
-	afterSyncFactoryThrows?: Dictionary<AdvisorFactoryOptions>;
 }
 
 export interface FactoryRegistry {
@@ -80,7 +78,13 @@ export interface ConstantRegistry {
 	constant: any;
 }
 
-export type ServiceRegistry = ClassRegistry | AdvisorRegistry | FactoryRegistry | ConstantRegistry;
+export interface DynamicRegistry {
+	type: 'dynamic';
+	token: InjectionToken;
+	dynamic: (container: DependencyContainer) => any;
+}
+
+export type ServiceRegistry = ClassRegistry | AdvisorRegistry | FactoryRegistry | ConstantRegistry | DynamicRegistry;
 
 export interface ClassRegistrationOptions {
 	scope?: InjectableScope;
@@ -102,6 +106,12 @@ export interface DependencyContainer {
 
 	/** 注册常量 */
 	registerConstant<T>(token: InjectionToken, constant: T): DependencyContainer;
+
+	/** 注册工厂 */
+	registerDynamic<T>(
+		token: InjectionToken<T>,
+		dynamic: (dependencyContainer: DependencyContainer) => T,
+	): DependencyContainer;
 
 	/** 注册AOP观察者 */
 	registerAdvisor<T>(clz: Constructor<T>): DependencyContainer;
@@ -129,18 +139,9 @@ export interface DependencyContainer {
 	 */
 	reset(): void;
 
-	clear(): void;
+	clone(): DependencyContainer;
 
 	createChildContainer(): DependencyContainer;
-}
-
-export interface FactoryInvokeContext {
-	__advice_metadata__: true;
-	registry: FactoryRegistry;
-	container: DependencyContainer;
-	args: any[];
-	result: any;
-	exception: any;
 }
 
 export interface MethodInvokeContext {

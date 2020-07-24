@@ -1,22 +1,21 @@
-import { DependencyContainer, LoggerProvider, Ordered, Dictionary, TraceContext } from '@artisan-framework/core';
+import { DependencyContainer, Dictionary, LoggerProvider, TraceContext } from '@artisan-framework/core';
 import { RouterOptions } from '@koa/router';
 import { IKoaBodyOptions } from 'koa-body';
 import { WebCookies } from './cookies';
-import { WebSession, WebSessionOptions } from './session';
-import Koa = require('koa');
 import { WebOnErrorOptions } from './error';
-import Router = require('@koa/router');
-import { IncomingMessage, ServerResponse } from 'http';
-import { Http2ServerRequest, Http2ServerResponse } from 'http2';
+import { WebSession, WebSessionOptions } from './session';
+import { WebStaticOptions } from './static';
 import { WebTraceOptions } from './trace';
+import Koa = require('koa');
+import Router = require('@koa/router');
 
 export const WebProvider = Symbol('Artisan#WebProvider');
 
-export const WebMiddleware = Symbol('Artisan#WebMiddleware');
+export const WebInitializationProvider = Symbol('Artisan#WebInitializationProvider');
 
 export const WEB_PROVIDER_CONFIG_KEY = 'artisan.web';
 
-export const WEB_PROVIDER_ORDER = 8000;
+export const WEB_PROVIDER_ORDER = 80000;
 
 export interface WebServerOptions {
 	port?: number;
@@ -37,13 +36,9 @@ export interface WebProviderConfig {
 	router?: RouterOptions;
 	session?: WebSessionOptions;
 	trace?: WebTraceOptions;
+	static?: WebStaticOptions;
 	onError?: WebOnErrorOptions;
 }
-
-export type WebCallback = (
-	req: IncomingMessage | Http2ServerRequest,
-	res: ServerResponse | Http2ServerResponse,
-) => Promise<void>;
 
 declare module 'koa' {
 	interface Context extends Koa.ParameterizedContext {
@@ -61,10 +56,8 @@ export type WebContext = Koa.Context;
 export interface WebProvider {
 	server: Koa<Dictionary, WebContext>;
 	router: Router<Dictionary, WebContext>;
-	// for test
-	callback(): WebCallback;
 }
 
-export interface WebMiddleware extends Ordered {
-	handle(ctx: WebContext, next: () => Promise<void>): Promise<void>;
+export interface WebInitializationProvider {
+	initWebProvider(webProvider: WebProvider): Promise<void>;
 }

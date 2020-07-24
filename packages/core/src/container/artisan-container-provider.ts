@@ -14,7 +14,7 @@ import {
 	TaggedAutowiredMetadata,
 	TaggedMetadata,
 } from './container-protocol';
-import { LazyConstructor } from './decorators/autowired';
+import { LazyConstructor } from './decorators/object';
 import { NOT_REGISTERED } from './error-messages';
 import { Registry } from './registry';
 
@@ -24,14 +24,13 @@ interface ResolutionContext {
 
 export class ArtisanContainerProvider implements DependencyContainer {
 	_registry: Registry;
-	private _advisorManager: AdvisorManager;
+	_advisorManager: AdvisorManager;
 
-	private _singletonCache = new Map<Constructor<any>, any>();
+	_singletonCache = new Map<Constructor<any>, any>();
+	_dynamicCache = new Map<(c: DependencyContainer) => any, any>();
 
 	constructor(public parent?: ArtisanContainerProvider) {
-		this._registry = new Registry();
-		this._registry.registerConstant(DependencyContainer, this);
-
+		this._registry = new Registry(this);
 		this._advisorManager = new AdvisorManager(this);
 	}
 
@@ -57,6 +56,14 @@ export class ArtisanContainerProvider implements DependencyContainer {
 		return this;
 	}
 
+	registerDynamic<T>(
+		token: InjectionToken,
+		dynamic: (dependencyContainer: DependencyContainer) => T,
+	): ArtisanContainerProvider {
+		this._registry.registerDynamic(token, dynamic);
+		return this;
+	}
+
 	registerAdvisor<T>(clz: Constructor<T>): ArtisanContainerProvider {
 		this._registry.registerAdvisor(clz);
 		return this;
@@ -75,13 +82,19 @@ export class ArtisanContainerProvider implements DependencyContainer {
 	}
 
 	reset(): void {
-		this.clear();
+		this._singletonCache.clear();
+		this._dynamicCache.clear();
+		this._advisorManager.clear();
 		this._registry.clear();
 	}
 
-	clear(): void {
-		this._singletonCache.clear();
-		this._advisorManager.clear();
+	clone(): ArtisanContainerProvider {
+		const newContainer = new ArtisanContainerProvider(this.parent);
+
+		newContainer._registry = this._registry.clone(newContainer);
+		newContainer._advisorManager = this._advisorManager.clone(newContainer);
+
+		return newContainer;
 	}
 
 	createChildContainer(): ArtisanContainerProvider {
@@ -135,8 +148,18 @@ export class ArtisanContainerProvider implements DependencyContainer {
 			return reg.constant;
 		}
 
+		if (reg.type === 'dynamic') {
+			if (this._dynamicCache.has(reg.dynamic)) {
+				return this._dynamicCache.get(reg.dynamic);
+			} else {
+				const dynamic = reg.dynamic(this);
+				this._dynamicCache.set(reg.dynamic, dynamic);
+				return dynamic;
+			}
+		}
+
 		if (reg.type === 'factory') {
-			return this._advisorManager.adviseFactory(reg)(this);
+			return reg.factory(this);
 		}
 
 		if (reg.scope !== InjectableScope.Singleton) {
@@ -202,10 +225,17 @@ export class ArtisanContainerProvider implements DependencyContainer {
 			instance = this._advisorManager.adviseClass(instance, reg, this);
 		}
 
+		// 放入构建缓存
 		ctx.dependencies.set(reg.clz, instance);
 
+		// 解析属性依赖
 		for (const propertyKey in reg.properties) {
 			instance[propertyKey] = resolveDependency(reg.properties[propertyKey]);
+		}
+
+		// post construct
+		if (reg.postConstructMethod) {
+			instance[reg.postConstructMethod]();
 		}
 
 		return instance;

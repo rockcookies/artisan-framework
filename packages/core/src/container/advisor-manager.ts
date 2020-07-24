@@ -1,95 +1,20 @@
 import is from '@sindresorhus/is';
-import { ArtisanContainerProvider } from './artisan-container-provider';
-import {
-	AdvisorRegistry,
-	ClassRegistry,
-	DependencyContainer,
-	FactoryInvokeContext,
-	FactoryRegistry,
-	MethodInvokeContext,
-	ObjectFactory,
-} from './container-protocol';
-import { AdvisorFactoryOptions, AdvisorMethodOptions } from './decorators/advice';
 import { Constructor } from '../interfaces';
-
-type ContainerFactory = (container: DependencyContainer) => ObjectFactory;
+import { ArtisanContainerProvider } from './artisan-container-provider';
+import { AdvisorRegistry, ClassRegistry, MethodInvokeContext } from './container-protocol';
+import { AdvisorMethodOptions } from './decorators/advice';
 
 export class AdvisorManager {
-	private _advisedFactories = new Map<ContainerFactory, ContainerFactory>();
 	private _advisedInstances = new Map<any, any>();
 
 	constructor(private container: ArtisanContainerProvider) {}
 
 	clear() {
-		this._advisedFactories.clear();
 		this._advisedInstances.clear();
 	}
 
-	adviseFactory(reg: FactoryRegistry): (container: DependencyContainer) => ObjectFactory {
-		let advisedFactory = this._advisedFactories.get(reg.factory);
-
-		if (advisedFactory) {
-			return advisedFactory;
-		}
-
-		// eslint-disable-next-line @typescript-eslint/no-this-alias
-		const self = this;
-
-		advisedFactory = function (container: DependencyContainer): ObjectFactory {
-			const fn = reg.factory(container);
-
-			return function proxyObjectFactory(this: any, ...args: any[]) {
-				const advisors = self._resolveAdvisors();
-
-				// 不进行代理
-				if (advisors.length <= 0) {
-					return fn.apply(this, args);
-				}
-
-				const ctx: FactoryInvokeContext = {
-					__advice_metadata__: true,
-					registry: reg,
-					container,
-					args,
-					result: undefined,
-					exception: undefined,
-				};
-
-				self.wavingFactorySync(ctx, advisors, 'beforeFactory');
-				let invokeResult;
-
-				try {
-					invokeResult = fn.apply(this, args);
-				} catch (ex) {
-					ctx.exception = ex;
-					self.wavingFactorySync(ctx, advisors, 'afterSyncFactoryThrows');
-					throw ex;
-				}
-
-				if (!is.promise(invokeResult)) {
-					ctx.result = invokeResult;
-					self.wavingFactorySync(ctx, advisors, 'afterSyncFactoryReturning');
-
-					return ctx.result;
-				}
-
-				return invokeResult
-					.then(async (result) => {
-						ctx.result = result;
-						await self.wavingFactoryAsync(ctx, advisors, 'afterAsyncFactoryReturning');
-						return ctx.result;
-					})
-					.catch(async (ex) => {
-						ctx.exception = ex;
-						await self.wavingFactoryAsync(ctx, advisors, 'afterAsyncFactoryThrows');
-						throw ex;
-					});
-			};
-		};
-
-		this._advisedFactories.set(reg.factory, advisedFactory);
-
-		return advisedFactory;
+	clone(container: ArtisanContainerProvider) {
+		return new AdvisorManager(container);
 	}
 
 	adviseClass(instance: any, reg: ClassRegistry, containerProvider: ArtisanContainerProvider): any {
@@ -186,49 +111,6 @@ export class AdvisorManager {
 		return result;
 	}
 
-	protected wavingFactorySync(
-		ctx: FactoryInvokeContext,
-		advisors: Array<[AdvisorRegistry, any]>,
-		aspect: keyof AdvisorRegistry,
-	) {
-		for (const [advisorRegistry, advisorInstance] of advisors) {
-			for (const [propertyKey, selector] of Object.entries(advisorRegistry[aspect] || {})) {
-				if (this.testFactorySelector(ctx, selector)) {
-					advisorInstance[propertyKey](ctx);
-				}
-			}
-		}
-	}
-
-	protected async wavingFactoryAsync(
-		ctx: FactoryInvokeContext,
-		advisors: Array<[AdvisorRegistry, any]>,
-		aspect: keyof AdvisorRegistry,
-	): Promise<void> {
-		for (const [advisorRegistry, advisorInstance] of advisors) {
-			for (const [propertyKey, selector] of Object.entries(advisorRegistry[aspect] || {})) {
-				if (this.testFactorySelector(ctx, selector)) {
-					await advisorInstance[propertyKey](ctx);
-				}
-			}
-		}
-	}
-
-	protected testFactorySelector(ctx: FactoryInvokeContext, selector: AdvisorFactoryOptions): boolean {
-		const factoryToken = ctx.registry.token;
-
-		return this.testSelector([
-			() =>
-				selector.tokens &&
-				selector.tokens.some((token) =>
-					token instanceof RegExp && typeof factoryToken === 'string'
-						? token.test(factoryToken)
-						: factoryToken === token,
-				),
-			() => selector.factories && selector.factories.some((factory) => factory === ctx.registry.factory),
-		]);
-	}
-
 	protected wavingMethodSync(
 		ctx: MethodInvokeContext,
 		advisors: Array<[AdvisorRegistry, any]>,
@@ -281,18 +163,14 @@ export class AdvisorManager {
 	}
 
 	private testSelector(conditions: Array<() => void | boolean>): boolean {
-		let result = false;
-
 		for (const test of conditions) {
 			const res = test();
 
 			if (res === false) {
 				return false;
-			} else if (res === true) {
-				result = true;
 			}
 		}
 
-		return result;
+		return true;
 	}
 }

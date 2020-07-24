@@ -126,13 +126,11 @@ export class ArtisanWebErrorHandler implements WebErrorHandler {
 			} else {
 				if (isDev) {
 					ctx.body = JSON.stringify({
-						code: err.code || err.type,
 						message,
 						error: err.stack,
 					});
 				} else {
 					ctx.body = JSON.stringify({
-						code: err.code || err.type,
 						message,
 					});
 				}

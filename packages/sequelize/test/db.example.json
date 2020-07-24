@@ -1,0 +1,7 @@
+{
+	"host": "localhost",
+	"dialect": "mysql",
+	"port": 3306,
+	"username": "root",
+	"database": "artisan_test"
+}

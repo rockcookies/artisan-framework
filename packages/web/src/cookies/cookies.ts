@@ -59,7 +59,7 @@ export class Cookies implements WebCookies {
 		let value = _value || '';
 
 		if (!this.ctx.secure && opts.secure) {
-			throw new Error('Cannot send secure cookie over un-encrypted connection');
+			throw new ArtisanException('Cannot send secure cookie over un-encrypted connection');
 		}
 
 		const _headers: string | string[] = this.ctx.response.get('set-cookie') || [];
@@ -111,7 +111,7 @@ export class Cookies implements WebCookies {
 			return this.encrypter;
 		}
 
-		throw new ArtisanException('EncryptionProvider required for encrypt/sign cookies');
+		throw new ArtisanException(`Dependency \`${EncryptionProvider.toString()}\` required for encrypt/sign cookies`);
 	}
 
 	private isSameSiteNoneCompatible(userAgent: string): boolean {

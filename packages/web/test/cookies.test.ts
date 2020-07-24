@@ -1,6 +1,6 @@
 import { createMockContext, Options } from '@shopify/jest-koa-mocks';
 import { Cookies, WebCookiesSetOptions } from '../src/cookies';
-import { ArtisanEncryptionProvider, EncryptionAlgorithm } from '@artisan-framework/crypto';
+import { ArtisanEncryptionProvider, EncryptionAlgorithm, EncryptionProvider } from '@artisan-framework/crypto';
 import { Dictionary } from '@artisan-framework/core';
 import crypto = require('crypto');
 
@@ -34,7 +34,7 @@ describe('cookies.test.ts', () => {
 
 		expect(() => {
 			cookies.set('foo', 'bar', { encrypt: true });
-		}).toThrow('EncryptionProvider required for encrypt/sign cookies');
+		}).toThrow(`Dependency \`${EncryptionProvider.toString()}\` required for encrypt/sign cookies`);
 	});
 
 	it('should not thrown when keys not present and do not use encrypt or sign', () => {

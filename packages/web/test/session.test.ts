@@ -16,7 +16,7 @@ describe('session.test.ts', () => {
 			return next();
 		});
 
-		const resp = await request(webProvider.callback()).post('/');
+		const resp = await request(await webProvider.callback()).post('/');
 		expect(resp.status).toBe(204);
 		expect(resp.header['set-cookie'].join(';')).toMatch(/artisan:sess/);
 	});
@@ -30,9 +30,8 @@ describe('session.test.ts', () => {
 			return next();
 		});
 
-		const resp = await request(webProvider.callback()).get('/');
+		const resp = await request(await webProvider.callback()).get('/');
 		expect(resp.status).toBe(200);
-		console.log(resp.header);
 		expect(resp.header['set-cookie']).toBe(undefined);
 	});
 
@@ -45,7 +44,7 @@ describe('session.test.ts', () => {
 			return next();
 		});
 
-		const resp = await request(webProvider.callback()).get('/');
+		const resp = await request(await webProvider.callback()).get('/');
 		expect(resp.status).toBe(200);
 		expect(resp.header['set-cookie'].join(';')).toMatch(/artisan:sess/);
 	});

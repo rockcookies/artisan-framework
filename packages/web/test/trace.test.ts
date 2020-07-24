@@ -10,7 +10,7 @@ describe('trace.test.ts', () => {
 			return next();
 		});
 
-		const resp = await request(webProvider.callback()).get('/');
+		const resp = await request(await webProvider.callback()).get('/');
 		expect(resp.header['x-trace-id']).toMatch(/[0-9a-f]+/i);
 		expect(resp.header['x-trace-span-id']).toMatch(/[0-9a-f]+/i);
 	});

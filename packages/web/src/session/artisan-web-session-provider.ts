@@ -10,7 +10,7 @@ export class ArtisanWebSessionProvider implements WebSessionProvider {
 	private options: Required<Omit<WebSessionOptions, 'sameSite'>> & Pick<WebSessionOptions, 'sameSite'>;
 
 	constructor(
-		@value({ el: WEB_PROVIDER_CONFIG_KEY, default: {} })
+		@value(WEB_PROVIDER_CONFIG_KEY)
 		config?: WebProviderConfig,
 	) {
 		const opts = config?.session || {};

@@ -13,6 +13,8 @@ export interface HttpErrorOptions extends ErrorOptions {
 export interface WebOnErrorOptions {
 	/** if accept html, can redirect to another error page */
 	errorPage?: string | ((err: any, ctx: WebContext) => string);
+	/** overriding default 404 page to another page */
+	notFoundPage?: string;
 }
 
 export interface WebErrorHandler extends Ordered {
