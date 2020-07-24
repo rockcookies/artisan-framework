@@ -1,6 +1,6 @@
 {
 	"name": "@artisan-framework/peon",
-	"version": "0.1.1-alpha.0",
+	"version": "0.1.2-alpha.0",
 	"description": "",
 	"license": "MIT",
 	"main": "build/index.js",
@@ -51,7 +51,7 @@
 		"typescript": "^3.9.7"
 	},
 	"dependencies": {
-		"@artisan-framework/core": "^0.1.1-alpha.0"
+		"@artisan-framework/core": "^0.1.2-alpha.0"
 	},
-	"gitHead": "80563cc85760eb52615156084d4b19db7912c69b"
+	"gitHead": "140b6bb863210a5bbe9b3fb8c5c1732f71b5e7ee"
 }
