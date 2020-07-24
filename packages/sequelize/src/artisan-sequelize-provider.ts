@@ -8,7 +8,7 @@ import {
 } from '@artisan-framework/core';
 import { ArtisanSequelize } from './artisan-sequelize';
 import {
-	SequelizeProviderOptions,
+	SequelizeProviderConfig,
 	SEQUELIZE_PROVIDER_CONFIG_KEY,
 	SEQUELIZE_PROVIDER_ORDER,
 	SequelizeProvider,
@@ -21,7 +21,7 @@ export class ArtisanSequelizeProvider implements ServiceProvider, SequelizeProvi
 	public logger: LoggerProvider;
 
 	@value(SEQUELIZE_PROVIDER_CONFIG_KEY)
-	private _config?: SequelizeProviderOptions;
+	private _config?: SequelizeProviderConfig;
 
 	private _databases = new Map<string, ArtisanSequelize>();
 

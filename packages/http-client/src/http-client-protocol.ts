@@ -12,7 +12,7 @@ interface SendTraceOptions {
 	traceSpanIdHeaderField?: string;
 }
 
-export interface HttpClientProviderOptions extends Omit<RequestOptions, 'agent' | 'httpsAgent'> {
+export interface HttpClientProviderConfig extends Omit<RequestOptions, 'agent' | 'httpsAgent'> {
 	httpAgent?: HttpOptions | boolean;
 	httpsAgent?: HttpOptions | boolean;
 	sendTrace?: SendTraceOptions | boolean;

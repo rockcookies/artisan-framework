@@ -8,7 +8,7 @@ import {
 	InjectionToken,
 	formatInjectionToken,
 } from '@artisan-framework/core';
-import { PeonProviderOptions, PEON_PROVIDER_CONFIG_KEY, PeonProvider } from './peon-protocol';
+import { PeonProviderConfig, PEON_PROVIDER_CONFIG_KEY, PeonProvider } from './peon-protocol';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 function noop(): void {}
@@ -24,7 +24,7 @@ export class ArtisanPeonProvider implements PeonProvider {
 	_logger: LoggerProvider;
 
 	@value(PEON_PROVIDER_CONFIG_KEY)
-	_config?: PeonProviderOptions;
+	_config?: PeonProviderConfig;
 
 	@autowired(DependencyContainer)
 	_container: DependencyContainer;

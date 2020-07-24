@@ -3,7 +3,7 @@ import Agent = require('agentkeepalive');
 import { URL } from 'url';
 import { postConstruct, value } from '@artisan-framework/core';
 import {
-	HttpClientProviderOptions,
+	HttpClientProviderConfig,
 	HttpRequestOptions,
 	HTTP_CLIENT_PROVIDER_CONFIG_KEY,
 	HttpClientProvider,
@@ -11,7 +11,7 @@ import {
 
 export class ArtisanHttpClientProvider implements HttpClientProvider {
 	@value(HTTP_CLIENT_PROVIDER_CONFIG_KEY)
-	_config?: HttpClientProviderOptions;
+	_config?: HttpClientProviderConfig;
 
 	_client: urllib.HttpClient;
 

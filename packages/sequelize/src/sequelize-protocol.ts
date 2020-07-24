@@ -21,7 +21,7 @@ export interface SequelizeOptions extends Omit<Options, 'logging'> {
 	logging?: boolean;
 }
 
-export interface SequelizeProviderOptions {
+export interface SequelizeProviderConfig {
 	defaultDatasource?: string;
 	datasources?: Dictionary<SequelizeOptions>;
 }

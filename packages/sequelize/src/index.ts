@@ -22,5 +22,5 @@ export {
 	SEQUELIZE_PROVIDER_ORDER,
 	EntityInstance,
 	SequelizeOptions,
-	SequelizeProviderOptions,
+	SequelizeProviderConfig,
 } from './sequelize-protocol';

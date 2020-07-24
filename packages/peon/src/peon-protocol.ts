@@ -4,7 +4,7 @@ export const PeonProvider = Symbol('Artisan#PeonProvider');
 
 export const PEON_PROVIDER_CONFIG_KEY = 'artisan.peon';
 
-export interface PeonProviderOptions {
+export interface PeonProviderConfig {
 	startTimeout?: number;
 	stopTimeout?: number;
 }

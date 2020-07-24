@@ -3,7 +3,7 @@ import util = require('util');
 import path = require('path');
 import stripJsonComments = require('strip-json-comments');
 import { AbstractConfigProvider, ConfigProvider, globalContainer } from '@artisan-framework/core';
-import { ArtisanSequelizeProvider, SequelizeOptions, SequelizeProvider, SequelizeProviderOptions } from '../src';
+import { ArtisanSequelizeProvider, SequelizeOptions, SequelizeProvider, SequelizeProviderConfig } from '../src';
 
 const readFile = util.promisify(fs.readFile);
 
@@ -13,7 +13,7 @@ export async function getSequelizeProvider(options: Partial<SequelizeOptions>): 
 	const json = await readFile(path.join(__dirname, './db.json'), { encoding: 'utf-8' });
 	const dbOptions: SequelizeOptions = JSON.parse(stripJsonComments(json));
 
-	const config: SequelizeProviderOptions = {
+	const config: SequelizeProviderConfig = {
 		datasources: { default: { ...dbOptions, ...options } },
 	};
 
