@@ -1,6 +1,6 @@
 {
 	"name": "@artisan-framework/http-client",
-	"version": "0.0.4-alpha.0",
+	"version": "0.0.5-alpha.0",
 	"description": "",
 	"license": "MIT",
 	"main": "build/index.js",
