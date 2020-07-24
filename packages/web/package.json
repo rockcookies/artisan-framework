@@ -1,6 +1,6 @@
 {
 	"name": "@artisan-framework/web",
-	"version": "0.1.0-alpha.0",
+	"version": "0.1.1-alpha.0",
 	"description": "",
 	"license": "MIT",
 	"main": "build/index.js",
@@ -54,8 +54,8 @@
 		"typescript": "^3.9.7"
 	},
 	"dependencies": {
-		"@artisan-framework/core": "^0.1.0-alpha.0",
-		"@artisan-framework/crypto": "^0.1.0-alpha.0",
+		"@artisan-framework/core": "^0.1.1-alpha.0",
+		"@artisan-framework/crypto": "^0.1.1-alpha.0",
 		"@koa/router": "^9.1.0",
 		"@types/http-terminator": "^2.0.1",
 		"@types/koa": "^2.11.3",
@@ -75,5 +75,5 @@
 		"uuid": "^8.2.0",
 		"ylru": "^1.2.1"
 	},
-	"gitHead": "87f1a2ab2c783e7211cf33518ba788f99d6b8380"
+	"gitHead": "80563cc85760eb52615156084d4b19db7912c69b"
 }
