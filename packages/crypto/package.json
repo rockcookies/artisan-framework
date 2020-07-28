@@ -1,6 +1,6 @@
 {
 	"name": "@artisan-framework/crypto",
-	"version": "0.1.3-alpha.0",
+	"version": "0.1.4-alpha.0",
 	"description": "",
 	"license": "MIT",
 	"main": "build/index.js",
@@ -35,7 +35,7 @@
 		"prepublishOnly": "npm run clean && npm run compile"
 	},
 	"devDependencies": {
-		"@types/jest": "^26.0.5",
+		"@types/jest": "^26.0.7",
 		"@types/node": "^12.12.50",
 		"@typescript-eslint/eslint-plugin": "^3.7.0",
 		"@typescript-eslint/parser": "^3.7.0",
@@ -52,6 +52,6 @@
 	},
 	"gitHead": "8ddc2270fc0975fb856cf9fea62c7ce80297c393",
 	"dependencies": {
-		"@artisan-framework/core": "^0.1.3-alpha.0"
+		"@artisan-framework/core": "^0.1.4-alpha.0"
 	}
 }
