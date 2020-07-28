@@ -1,6 +1,6 @@
 {
 	"name": "@artisan-framework/validate",
-	"version": "0.1.6-alpha.0",
+	"version": "0.1.7-alpha.0",
 	"description": "",
 	"license": "MIT",
 	"main": "build/index.js",
@@ -50,7 +50,7 @@
 		"typescript": "^3.9.7"
 	},
 	"dependencies": {
-		"@artisan-framework/core": "^0.1.6-alpha.0"
+		"@artisan-framework/core": "^0.1.7-alpha.0"
 	},
 	"gitHead": "8ddc2270fc0975fb856cf9fea62c7ce80297c393"
 }
