@@ -8,6 +8,7 @@ export const DEFAULT_WEB_ERROR_HANDLER_ORDER = 500;
 export interface HttpErrorOptions extends ErrorOptions {
 	status: number;
 	headers?: Dictionary;
+	exposed?: boolean;
 }
 
 export interface WebOnErrorOptions {

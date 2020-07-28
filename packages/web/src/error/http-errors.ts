@@ -119,6 +119,7 @@ export class HttpError extends ArtisanBaseError<HttpErrorOptions> {
 		this.headers = {};
 		this.status = this.options.status;
 		this.headers = this.options.headers || {};
+		this.exposed = this.options.exposed === false ? false : true;
 	}
 }
 
