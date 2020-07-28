@@ -13,6 +13,8 @@ export const WebProvider = Symbol('Artisan#WebProvider');
 
 export const WebInitializationProvider = Symbol('Artisan#WebInitializationProvider');
 
+export const WebContext = Symbol('Artisan#WebContext');
+
 export const WEB_PROVIDER_CONFIG_KEY = 'artisan.web';
 
 export const WEB_PROVIDER_ORDER = 80000;

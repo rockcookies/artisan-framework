@@ -136,7 +136,10 @@ export class ArtisanWebProvider implements ServiceProvider, WebProvider {
 							return this[ArtisanContainer];
 						}
 
-						this[ArtisanContainer] = web._container.createChildContainer();
+						const container = (this[ArtisanContainer] = web._container.createChildContainer());
+
+						container.registerConstant(WebContext, this);
+
 						return this[ArtisanContainer];
 					},
 					set(container) {
