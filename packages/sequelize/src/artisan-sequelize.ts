@@ -79,7 +79,7 @@ export class ArtisanSequelize {
 	async authenticate(): Promise<void> {
 		const max = 3;
 
-		this._logger.debug(`${this._logPrefix} authenticating`);
+		this._logger.debug(`${this._logPrefix} connecting...`);
 
 		for (let i = 1; i <= max; i++) {
 			try {
@@ -102,7 +102,7 @@ export class ArtisanSequelize {
 	}
 
 	async close(): Promise<void> {
-		this._logger.debug(`${this._logPrefix} closing`);
+		this._logger.debug(`${this._logPrefix} closing...`);
 
 		try {
 			await this.instance.close();

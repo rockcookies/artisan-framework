@@ -96,7 +96,7 @@ export class ArtisanWebProvider implements ServiceProvider, WebProvider {
 			server,
 		});
 
-		this.logger.info(`[web] started at ${hostname}:${port}`);
+		this.logger.info(`[web] listening on: ${hostname}:${port}`);
 	}
 
 	async stop(): Promise<void> {

@@ -47,7 +47,11 @@ export class ArtisanPeonProvider implements PeonProvider {
 			['SIGTERM', 128 + 15],
 			['SIGBREAK', 128 + 21],
 		]).map(([signal, code]): (() => void) => {
-			const listener = () => this._exit(code, `signal ${signal}`);
+			const listener = () => {
+				this._logger.info(`[peon] received shutdown signal: ${signal}`);
+				this._unSubscribeProcessMessage();
+				this._exit(code);
+			};
 
 			process.on(signal, listener);
 
@@ -75,16 +79,21 @@ export class ArtisanPeonProvider implements PeonProvider {
 		const startTime = Date.now();
 		const startTimeout = this._config?.startTimeout || 10 * 1000;
 
-		this._logger.info('[peon] application staring...', { start_timeout: startTimeout });
+		this._logger.info('[peon] staring...', {
+			process_env: process.env.NODE_ENV,
+			start_timeout: startTimeout,
+		});
 
 		// 启动模块
 		Promise.race([this._setupProviders(tokens).then(() => true), sleep(startTimeout).then(() => false)]).then(
 			(success) => {
 				if (success) {
-					this._logger.info(`[peon] application started in ${Date.now() - startTime}ms`);
+					this._logger.info(`[peon] started in ${Date.now() - startTime}ms`, {
+						process_env: process.env.NODE_ENV,
+					});
 				} else {
-					this._logger.error('[peon] application start timeout');
-					this._exit(1, 'application start timeout');
+					this._logger.error(`[peon] start timeout: ${Date.now() - startTime}ms`);
+					this._exit(1);
 				}
 			},
 		);
@@ -102,17 +111,17 @@ export class ArtisanPeonProvider implements PeonProvider {
 
 			const startTime = Date.now();
 			const [_token, provider] = _provider;
-			const token = `provider(${formatInjectionToken(_token)})`;
+			const token = `provider<${formatInjectionToken(_token)}>`;
 
-			this._logger.debug(`[peon] ${token} staring...`);
+			this._logger.debug(`[peon] staring ${token}...`);
 
 			try {
 				await provider.start();
-				this._logger.debug(`[peon] ${token} started in ${Date.now() - startTime}ms`);
+				this._logger.info(`[peon] ${token} started in ${Date.now() - startTime}ms`);
 				this._activeProviders.push(_provider);
 			} catch (err) {
-				this._logger.error(`[peon] ${token} start error`, { err });
-				this._exit(1, `${token} start error`);
+				this._logger.error(`[peon] start ${token} error`, { err });
+				this._exit(1);
 			}
 		}
 	}
@@ -135,9 +144,10 @@ export class ArtisanPeonProvider implements PeonProvider {
 	}
 
 	protected _uncaughtExceptionHandler(err: any): void {
+		// https://github.com/node-modules/graceful
 		this._throwUncaughtExceptionCount++;
 
-		this._logger.error('[peon] received uncaughtException', {
+		this._logger.error(`[peon] received uncaughtException, ${this._throwUncaughtExceptionCount == 1}`, {
 			err,
 			throw_count: this._throwUncaughtExceptionCount,
 		});
@@ -146,14 +156,14 @@ export class ArtisanPeonProvider implements PeonProvider {
 			return;
 		}
 
-		this._exit(1, 'uncaughtException');
+		this._exit(1);
 	}
 
 	protected _unhandledRejectionHandler(err: any): void {
 		this._logger.error('[peon] received unhandledRejection', { err });
 	}
 
-	protected _exit(code: number, reason: string) {
+	protected _exit(code: number) {
 		if (this._exited) {
 			return;
 		} else {
@@ -163,15 +173,15 @@ export class ArtisanPeonProvider implements PeonProvider {
 
 		const stopTime = Date.now();
 		const stopTimeout = this._config?.stopTimeout || 10 * 1000;
-		this._logger.info(`[peon] exit with ${code}, commencing graceful shutdown: ${reason}`, {
+		this._logger.info(`[peon] commencing graceful shutdown with exit code: ${code}`, {
 			stop_timeout: stopTimeout,
 		});
 
 		Promise.race([this._stopProviders().then(() => true), sleep(stopTimeout).then(() => false)]).then((success) => {
 			if (success) {
-				this._logger.info(`[peon] application exited in ${Date.now() - stopTime}ms`);
+				this._logger.info(`[peon] exited in ${Date.now() - stopTime}ms`);
 			} else {
-				this._logger.error('[peon] application exit timeout');
+				this._logger.error('[peon] exit timeout');
 			}
 
 			process.exit(code);
