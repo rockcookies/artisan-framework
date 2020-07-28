@@ -1,6 +1,6 @@
 {
 	"name": "@artisan-framework/web",
-	"version": "0.1.4-alpha.0",
+	"version": "0.1.5-alpha.0",
 	"description": "",
 	"license": "MIT",
 	"main": "build/index.js",
@@ -54,8 +54,8 @@
 		"typescript": "^3.9.7"
 	},
 	"dependencies": {
-		"@artisan-framework/core": "^0.1.4-alpha.0",
-		"@artisan-framework/crypto": "^0.1.4-alpha.0",
+		"@artisan-framework/core": "^0.1.5-alpha.0",
+		"@artisan-framework/crypto": "^0.1.5-alpha.0",
 		"@koa/router": "^9.1.0",
 		"@types/http-terminator": "^2.0.1",
 		"@types/koa": "^2.11.3",
