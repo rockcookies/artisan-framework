@@ -1,5 +1,6 @@
 import { DependencyContainer, Dictionary, LoggerProvider, TraceContext } from '@artisan-framework/core';
 import { RouterOptions } from '@koa/router';
+import { Files } from 'formidable';
 import { IKoaBodyOptions } from 'koa-body';
 import { WebCookies } from './cookies';
 import { WebOnErrorOptions } from './error';
@@ -43,6 +44,11 @@ export interface WebProviderConfig {
 }
 
 declare module 'koa' {
+	interface Request extends Koa.BaseRequest {
+		body?: any;
+		files?: Files;
+	}
+
 	interface Context extends Koa.ParameterizedContext {
 		container: DependencyContainer;
 		logger: LoggerProvider;
