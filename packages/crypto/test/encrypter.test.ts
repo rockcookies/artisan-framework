@@ -1,5 +1,5 @@
-import { ArtisanEncryptionProvider } from '../src/artisan-encryption-provider';
-import { ENCRYPTION_PROVIDER_CONFIG_KEY, EncryptionAlgorithm } from '../src';
+import { EncryptionAlgorithm, ENCRYPTION_PROVIDER_CONFIG_KEY } from '../src';
+import { getEncryptionProvider } from './utils';
 
 describe('encrypter.test.ts', () => {
 	const foo: EncryptionAlgorithm = {
@@ -23,13 +23,13 @@ describe('encrypter.test.ts', () => {
 
 	it('should throw without keys', async () => {
 		expect(() => {
-			new ArtisanEncryptionProvider({ algorithms: [] }).encrypt('hello');
+			getEncryptionProvider({ algorithms: [] }).encrypt('hello');
 		}).toThrowError(`config '${ENCRYPTION_PROVIDER_CONFIG_KEY}.algorithms' must be provided`);
 	});
 
 	it('should encrypt and decrypt success', () => {
-		const kgA = new ArtisanEncryptionProvider({ algorithms: [foo, bar] });
-		const kgB = new ArtisanEncryptionProvider({ algorithms: [another, foo] });
+		const kgA = getEncryptionProvider({ algorithms: [foo, bar] });
+		const kgB = getEncryptionProvider({ algorithms: [another, foo] });
 
 		const encrypted = kgA.encrypt('hello');
 
@@ -38,8 +38,8 @@ describe('encrypter.test.ts', () => {
 	});
 
 	it('should decrypt error return false', () => {
-		const kgA = new ArtisanEncryptionProvider({ algorithms: [foo, bar] });
-		const kgB = new ArtisanEncryptionProvider({ algorithms: [another] });
+		const kgA = getEncryptionProvider({ algorithms: [foo, bar] });
+		const kgB = getEncryptionProvider({ algorithms: [another] });
 
 		const encrypted = kgA.encrypt('hello');
 
@@ -48,8 +48,8 @@ describe('encrypter.test.ts', () => {
 	});
 
 	it('should signed and verify success', () => {
-		const kgA = new ArtisanEncryptionProvider({ algorithms: [foo, bar] });
-		const kgB = new ArtisanEncryptionProvider({ algorithms: [another, foo] });
+		const kgA = getEncryptionProvider({ algorithms: [foo, bar] });
+		const kgB = getEncryptionProvider({ algorithms: [another, foo] });
 
 		const buf = Buffer.from('hello', 'utf8');
 		const signed = kgA.sign(buf);
@@ -59,8 +59,8 @@ describe('encrypter.test.ts', () => {
 	});
 
 	it('should signed and verify failed return false', () => {
-		const kgA = new ArtisanEncryptionProvider({ algorithms: [foo, bar] });
-		const kgB = new ArtisanEncryptionProvider({ algorithms: [another] });
+		const kgA = getEncryptionProvider({ algorithms: [foo, bar] });
+		const kgB = getEncryptionProvider({ algorithms: [another] });
 
 		const buf = Buffer.from('hello', 'utf8');
 		const signed = kgA.sign(buf);

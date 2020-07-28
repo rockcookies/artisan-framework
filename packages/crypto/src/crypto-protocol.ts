@@ -2,6 +2,8 @@ export const EncryptionProvider = Symbol('Artisan#EncryptionProvider');
 
 export const ENCRYPTION_PROVIDER_CONFIG_KEY = 'artisan.encryption';
 
+export const ENCRYPTION_PROVIDER_ORDER = 10000;
+
 export interface EncryptionAlgorithm {
 	/** Must be 256 bits (32 characters) */
 	key: string;

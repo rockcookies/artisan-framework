@@ -1,44 +1,25 @@
 import urllib = require('urllib');
 import Agent = require('agentkeepalive');
+import { autowired, LoggerProvider, ServiceProvider, value } from '@artisan-framework/core';
 import { URL } from 'url';
-import { postConstruct, value } from '@artisan-framework/core';
 import {
+	HttpClientProvider,
 	HttpClientProviderConfig,
 	HttpRequestOptions,
 	HTTP_CLIENT_PROVIDER_CONFIG_KEY,
-	HttpClientProvider,
+	HTTP_CLIENT_PROVIDER_ORDER,
 } from './http-client-protocol';
 
-export class ArtisanHttpClientProvider implements HttpClientProvider {
+export class ArtisanHttpClientProvider implements HttpClientProvider, ServiceProvider {
+	@autowired(LoggerProvider)
+	_logger: LoggerProvider;
+
 	@value(HTTP_CLIENT_PROVIDER_CONFIG_KEY)
 	_config?: HttpClientProviderConfig;
 
 	_client: urllib.HttpClient;
 
-	async request<T = any>(url: string | URL, _options?: HttpRequestOptions): Promise<urllib.HttpClientResponse<T>> {
-		const { sendTrace = true } = this._config || {};
-		const { trace, ...restOptions } = _options || {};
-
-		const options: HttpRequestOptions & Required<Pick<HttpRequestOptions, 'headers'>> = {
-			...restOptions,
-			headers: {
-				...restOptions.headers,
-			},
-		};
-
-		if (sendTrace && trace) {
-			const traceIdField = (sendTrace !== true && sendTrace.traceIdHeaderField) || 'x-trace-id';
-			const traceSpanIdField = (sendTrace !== true && sendTrace.traceSpanIdHeaderField) || 'x-trace-span-id';
-
-			options.headers[traceIdField] = trace.traceId;
-			options.headers[traceSpanIdField] = trace.spanId;
-		}
-
-		return await this._client.request(url, options);
-	}
-
-	@postConstruct()
-	_init() {
+	async start(): Promise<void> {
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		const { httpAgent = true, httpsAgent = true, sendTrace: _sendTrace, ...restOptions } = this._config || {};
 
@@ -69,5 +50,37 @@ export class ArtisanHttpClientProvider implements HttpClientProvider {
 		}
 
 		this._client = urllib.create(options);
+
+		this._logger.info('[http-client] created', options);
+	}
+
+	async stop(): Promise<void> {
+		this._logger.info('[http-client] closed');
+	}
+
+	order(): number {
+		return HTTP_CLIENT_PROVIDER_ORDER;
+	}
+
+	async request<T = any>(url: string | URL, _options?: HttpRequestOptions): Promise<urllib.HttpClientResponse<T>> {
+		const { sendTrace = true } = this._config || {};
+		const { trace, ...restOptions } = _options || {};
+
+		const options: HttpRequestOptions & Required<Pick<HttpRequestOptions, 'headers'>> = {
+			...restOptions,
+			headers: {
+				...restOptions.headers,
+			},
+		};
+
+		if (sendTrace && trace) {
+			const traceIdField = (sendTrace !== true && sendTrace.traceIdHeaderField) || 'x-trace-id';
+			const traceSpanIdField = (sendTrace !== true && sendTrace.traceSpanIdHeaderField) || 'x-trace-span-id';
+
+			options.headers[traceIdField] = trace.traceId;
+			options.headers[traceSpanIdField] = trace.spanId;
+		}
+
+		return await this._client.request(url, options);
 	}
 }

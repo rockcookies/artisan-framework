@@ -1,7 +1,7 @@
+import { AbstractConfigProvider, ConfigProvider, Dictionary, globalContainer } from '@artisan-framework/core';
+import { EncryptionAlgorithm, EncryptionProvider } from '@artisan-framework/crypto';
 import { createMockContext, Options } from '@shopify/jest-koa-mocks';
 import { Cookies, WebCookiesSetOptions } from '../src/cookies';
-import { ArtisanEncryptionProvider, EncryptionAlgorithm, EncryptionProvider } from '@artisan-framework/crypto';
-import { Dictionary } from '@artisan-framework/core';
 import crypto = require('crypto');
 
 describe('cookies.test.ts', () => {
@@ -16,17 +16,29 @@ describe('cookies.test.ts', () => {
 		{ algorithms, ...options }: WebCookiesSetOptions & { algorithms?: EncryptionAlgorithm[] | false },
 		opts?: Options<Dictionary>,
 	): Cookies => {
+		const container = globalContainer.clone();
+
+		container.registerClass(
+			ConfigProvider,
+			class CP extends AbstractConfigProvider {
+				config() {
+					return {
+						artisan: {
+							encryption: { algorithms: algorithms || _encryptionAlgorithms },
+						},
+					};
+				}
+			},
+		);
+
+		const encryption = container.resolve<EncryptionProvider>(EncryptionProvider);
+
 		const ctx = createMockContext({
 			url: options.secure ? 'https://abc.com' : 'http://abc.com',
 			...opts,
 		});
 
-		return new Cookies(
-			ctx,
-			algorithms === false
-				? undefined
-				: new ArtisanEncryptionProvider({ algorithms: algorithms || _encryptionAlgorithms }),
-		);
+		return new Cookies(ctx, algorithms === false ? undefined : encryption);
 	};
 
 	it('should encrypt error when keys not present', () => {

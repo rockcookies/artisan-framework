@@ -5,6 +5,8 @@ import { TraceContext } from '@artisan-framework/core';
 
 export const HTTP_CLIENT_PROVIDER_CONFIG_KEY = 'artisan.httpClient';
 
+export const HTTP_CLIENT_PROVIDER_ORDER = 10000;
+
 export const HttpClientProvider = Symbol('Artisan#HttpClientProvider');
 
 interface SendTraceOptions {

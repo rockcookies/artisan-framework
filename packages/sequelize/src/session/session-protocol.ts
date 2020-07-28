@@ -29,6 +29,10 @@ import {
 } from 'sequelize';
 import { EntityInstance } from '../sequelize-protocol';
 
+export const SequelizeTransactionManager = Symbol('Artisan#SequelizeTransactionManager');
+
+export const SequelizeSessionManager = Symbol('Artisan#SequelizeSessionManager');
+
 export type SequelizeStatement = string | { query: string; values: unknown[] };
 
 export interface SequelizeTransactionOptions extends Omit<TransactionOptions, 'transaction' | 'logging' | 'benchmark'> {

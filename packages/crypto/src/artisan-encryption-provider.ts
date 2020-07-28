@@ -1,9 +1,17 @@
-import { ArtisanException, autowired, Dictionary, LoggerProvider, value } from '@artisan-framework/core';
+import {
+	ArtisanException,
+	autowired,
+	Dictionary,
+	LoggerProvider,
+	value,
+	ServiceProvider,
+} from '@artisan-framework/core';
 import {
 	EncryptionAlgorithm,
 	EncryptionProvider,
 	EncryptionProviderConfig,
 	ENCRYPTION_PROVIDER_CONFIG_KEY,
+	ENCRYPTION_PROVIDER_ORDER,
 } from './crypto-protocol';
 import crypto = require('crypto');
 
@@ -21,11 +29,11 @@ const crypt = (cipher: crypto.Cipher | crypto.Decipher, data: Buffer): Buffer =>
 	return Buffer.concat([text, pad]);
 };
 
-export class ArtisanEncryptionProvider implements EncryptionProvider {
+export class ArtisanEncryptionProvider implements EncryptionProvider, ServiceProvider {
 	readonly algorithms: Array<Required<EncryptionAlgorithm>>;
 
-	@autowired({ token: LoggerProvider, optional: true })
-	private _logger?: LoggerProvider;
+	@autowired(LoggerProvider)
+	_logger: LoggerProvider;
 
 	constructor(
 		@value(ENCRYPTION_PROVIDER_CONFIG_KEY)
@@ -36,6 +44,18 @@ export class ArtisanEncryptionProvider implements EncryptionProvider {
 			hmac: algorithm.hmac || 'sha256',
 			cipher: algorithm.cipher || 'aes-256-cbc',
 		}));
+	}
+
+	async start(): Promise<void> {
+		this._logger.info('[http-client] created');
+	}
+
+	async stop(): Promise<void> {
+		this._logger.info('[http-client] closed');
+	}
+
+	order(): number {
+		return ENCRYPTION_PROVIDER_ORDER;
 	}
 
 	encrypt(data: Buffer | string): Buffer {
@@ -56,10 +76,9 @@ export class ArtisanEncryptionProvider implements EncryptionProvider {
 				const decipher = crypto.createDecipheriv(algorithm, key, iv);
 				return crypt(decipher, this._convertToBuffer(data));
 			} catch (err) {
-				this._logger &&
-					this._logger.debug(`[encryption] decrypt data error at #${i}, length: ${length}`, {
-						error: err,
-					});
+				this._logger.debug(`[encryption] decrypt data error at #${i}, length: ${length}`, {
+					error: err,
+				});
 			}
 		}
 
