@@ -23,4 +23,12 @@ export const Validator = {
 
 export { formatValidateError } from './validate-helper';
 export * as locale from './locale';
+export {
+	ValidateOptions,
+	ValidateErrorEntry,
+	ValidateContext,
+	ValidateResult,
+	ValidateCheck,
+	ValidateDecoder,
+} from './interfaces';
 export { Criterion, CriterionStatic, CriterionMixed, CriterionShape, CriterionShapeStatic } from './criterion';
