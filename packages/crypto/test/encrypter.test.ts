@@ -1,4 +1,4 @@
-import { EncryptionAlgorithm, ENCRYPTION_PROVIDER_CONFIG_KEY } from '../src';
+import { EncryptionAlgorithm } from '../src';
 import { getEncryptionProvider } from './utils';
 
 describe('encrypter.test.ts', () => {
@@ -20,14 +20,6 @@ describe('encrypter.test.ts', () => {
 	function decrypt(digest: Buffer | false): string | false {
 		return digest === false ? digest : digest.toString('utf8');
 	}
-
-	it('should throw without keys', async () => {
-		const k = await getEncryptionProvider({ algorithms: [] });
-
-		expect(() => {
-			k.encrypt('hello');
-		}).toThrowError(`config '${ENCRYPTION_PROVIDER_CONFIG_KEY}.algorithms' must be provided`);
-	});
 
 	it('should encrypt and decrypt success', async () => {
 		const kgA = await getEncryptionProvider({ algorithms: [foo, bar] });

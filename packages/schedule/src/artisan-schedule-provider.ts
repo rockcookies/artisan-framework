@@ -3,7 +3,7 @@ import { SCHEDULE_PROVIDER_ORDER, ScheduleTask, ScheduleProvider } from './sched
 import { ArtisanScheduleRunner } from './artisan-schedule-runner';
 
 export class ArtisanScheduleProvider implements ScheduleProvider, ProviderLifecycle, Namable, Ordered {
-	@autowired()
+	@autowired(LoggerProvider)
 	_logger: LoggerProvider;
 
 	@autowiredAll(ScheduleTask)
