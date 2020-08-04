@@ -1,7 +1,7 @@
 import { AbstractConfigProvider, ConfigProvider, globalContainer } from '@artisan-framework/core';
 import { ArtisanEncryptionProvider, EncryptionProviderConfig, EncryptionProvider } from '../src';
 
-export function getEncryptionProvider(config: EncryptionProviderConfig): ArtisanEncryptionProvider {
+export async function getEncryptionProvider(config: EncryptionProviderConfig): Promise<ArtisanEncryptionProvider> {
 	const container = globalContainer.clone();
 
 	container.registerClass(
@@ -17,5 +17,9 @@ export function getEncryptionProvider(config: EncryptionProviderConfig): Artisan
 		},
 	);
 
-	return container.resolve<ArtisanEncryptionProvider>(EncryptionProvider);
+	const provider = container.resolve<ArtisanEncryptionProvider>(EncryptionProvider);
+
+	await provider.start();
+
+	return provider;
 }

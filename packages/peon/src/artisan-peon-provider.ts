@@ -1,24 +1,20 @@
 import {
 	autowired,
 	DependencyContainer,
-	LoggerProvider,
-	ServiceProvider,
-	value,
-	sleep,
 	InjectionToken,
-	formatInjectionToken,
+	LoggerProvider,
+	ProviderLifecycle,
+	sleep,
+	value,
 } from '@artisan-framework/core';
-import { PeonProviderConfig, PEON_PROVIDER_CONFIG_KEY, PeonProvider } from './peon-protocol';
-
-// eslint-disable-next-line @typescript-eslint/no-empty-function
-function noop(): void {}
+import { PeonProvider, PeonProviderConfig, PEON_PROVIDER_CONFIG_KEY } from './peon-protocol';
 
 export class ArtisanPeonProvider implements PeonProvider {
 	private _started = false;
 	private _exited = false;
-	private _unSubscribeProcessMessage = noop;
+	private _unSubscribeProcessListeners: Array<() => void> = [];
 	private _throwUncaughtExceptionCount = 0;
-	private _activeProviders: Array<[InjectionToken, ServiceProvider]> = [];
+	private _activeProviders: Array<[string, ProviderLifecycle]> = [];
 
 	@autowired(LoggerProvider)
 	_logger: LoggerProvider;
@@ -36,7 +32,7 @@ export class ArtisanPeonProvider implements PeonProvider {
 			this._started = true;
 		}
 
-		const unsubscribeList = Array.from<[any, number]>([
+		for (const [signal, code] of Array.from<[string, number]>([
 			['exit', 0],
 			['beforeExit', 0],
 			['SIGHUP', 128 + 1],
@@ -46,27 +42,14 @@ export class ArtisanPeonProvider implements PeonProvider {
 			// ['SIGINT', 128 + 2],
 			['SIGTERM', 128 + 15],
 			['SIGBREAK', 128 + 21],
-		]).map(([signal, code]): (() => void) => {
+		])) {
 			const listener = () => {
-				this._logger.info(`[peon] received shutdown signal: ${signal}`);
-				this._unSubscribeProcessMessage();
+				this._logger.info(`[peon] received shutdown signal '${signal}', exit it now`);
 				this._exit(code);
 			};
 
-			process.on(signal, listener);
-
-			return () => {
-				process.off(signal, listener);
-			};
-		});
-
-		this._unSubscribeProcessMessage = () => {
-			for (const unsubscribe of unsubscribeList) {
-				unsubscribe();
-			}
-
-			this._unSubscribeProcessMessage = noop;
-		};
+			this._unSubscribeProcessListeners.push(() => process.off(signal, listener));
+		}
 
 		process.on('uncaughtException', (err) => {
 			this._uncaughtExceptionHandler(err);
@@ -100,27 +83,47 @@ export class ArtisanPeonProvider implements PeonProvider {
 	}
 
 	protected async _setupProviders(tokens: InjectionToken[]): Promise<void> {
-		const providers = [...new Set(tokens)]
-			.map((token): [InjectionToken, ServiceProvider] => [token, this._container.resolve<ServiceProvider>(token)])
-			.sort(([, a], [, b]) => a.order() - b.order());
+		let providers: Array<[string, ProviderLifecycle]> = [];
+
+		for (const token of [...new Set(tokens)]) {
+			for (const provider of this._container.resolveAll<ProviderLifecycle>(token)) {
+				providers.push([
+					typeof (provider as any).name === 'function'
+						? `provider<${(provider as any).name()}>`
+						: 'provider<undefined>',
+					provider,
+				]);
+			}
+		}
+
+		providers = providers.sort(([, a], [, b]) => {
+			const oA = typeof a.order === 'function' ? a.order() : 0;
+			const oB = typeof b.order === 'function' ? b.order() : 0;
+			return oA - oB;
+		});
 
 		for (const _provider of providers) {
 			if (this._exited) {
 				return;
 			}
 
-			const startTime = Date.now();
-			const [_token, provider] = _provider;
-			const token = `provider<${formatInjectionToken(_token)}>`;
+			const [providerName, provider] = _provider;
 
-			this._logger.debug(`[peon] staring ${token}...`);
+			this._logger.debug(`[peon] staring ${providerName}...`);
+
+			if (typeof provider.start !== 'function') {
+				this._logger.info(`[peon] ${providerName} start !== 'function', skip it`);
+				continue;
+			}
+
+			const startTime = Date.now();
 
 			try {
 				await provider.start();
-				this._logger.info(`[peon] ${token} started in ${Date.now() - startTime}ms`);
+				this._logger.info(`[peon] ${providerName} started in ${Date.now() - startTime}ms`);
 				this._activeProviders.push(_provider);
 			} catch (err) {
-				this._logger.error(`[peon] start ${token} error`, { err });
+				this._logger.error(`[peon] start ${providerName} error: ${err}`, { err });
 				this._exit(1);
 			}
 		}
@@ -128,17 +131,22 @@ export class ArtisanPeonProvider implements PeonProvider {
 
 	protected async _stopProviders(): Promise<void> {
 		for (let i = this._activeProviders.length - 1; i >= 0; i--) {
-			const stopTime = Date.now();
-			const [_token, provider] = this._activeProviders[i];
-			const token = `provider(${formatInjectionToken(_token)})`;
+			const [providerName, provider] = this._activeProviders[i];
 
-			this._logger.debug(`[peon] ${token} closing...`);
+			this._logger.debug(`[peon] ${providerName} closing...`);
+
+			if (typeof provider.stop !== 'function') {
+				this._logger.info(`[peon] ${providerName} stop !== 'function', skip it`);
+				continue;
+			}
+
+			const stopTime = Date.now();
 
 			try {
 				await provider.stop();
-				this._logger.debug(`[peon] ${token} closed in ${Date.now() - stopTime}ms`);
+				this._logger.debug(`[peon] ${providerName} closed in ${Date.now() - stopTime}ms`);
 			} catch (err) {
-				this._logger.error(`[peon] ${token} close error`, { err });
+				this._logger.error(`[peon] ${providerName} close error: ${err}`, { err });
 			}
 		}
 	}
@@ -147,27 +155,32 @@ export class ArtisanPeonProvider implements PeonProvider {
 		// https://github.com/node-modules/graceful
 		this._throwUncaughtExceptionCount++;
 
-		this._logger.error(`[peon] received uncaughtException, ${this._throwUncaughtExceptionCount == 1}`, {
-			err,
-			throw_count: this._throwUncaughtExceptionCount,
-		});
-
 		if (this._throwUncaughtExceptionCount > 1) {
-			return;
+			this._logger.error(`[peon] received uncaughtException: ${err}`, {
+				err,
+				throw_count: this._throwUncaughtExceptionCount,
+			});
+		} else {
+			this._logger.error(`[peon] received uncaughtException, exit it now: ${err}`, { err });
 		}
 
 		this._exit(1);
 	}
 
 	protected _unhandledRejectionHandler(err: any): void {
-		this._logger.error('[peon] received unhandledRejection', { err });
+		this._logger.error(`[peon] received unhandledRejection: ${err}`, { err });
 	}
 
 	protected _exit(code: number) {
+		for (const unSubscribe of this._unSubscribeProcessListeners) {
+			unSubscribe();
+		}
+
+		this._unSubscribeProcessListeners = [];
+
 		if (this._exited) {
 			return;
 		} else {
-			this._unSubscribeProcessMessage();
 			this._exited = true;
 		}
 

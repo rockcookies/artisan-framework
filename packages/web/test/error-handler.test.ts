@@ -51,45 +51,40 @@ describe('error-handler.test.ts', () => {
 	// ------------------
 
 	it('[html] should common error ok', async () => {
-		const webProvider = getWebProvider();
-		webProvider.server.use(commonError);
-
-		const resp = await request(await webProvider.callback())
-			.get('/')
-			.set('Accept', 'text/html');
+		const webProvider = await getWebProvider({}, async (web) => {
+			web.server.use(commonError);
+		});
+		const resp = await request(webProvider.server.callback()).get('/').set('Accept', 'text/html');
 		expect(resp.text).toMatch(/<p>Looks like something broke!<\/p>/);
 	});
 
 	it('[html] should common error after sleep a little while ok', async () => {
-		const webProvider = getWebProvider();
-		webProvider.server.use(commonSleepError);
+		const webProvider = await getWebProvider({}, async (web) => {
+			web.server.use(commonSleepError);
+		});
 
-		const resp = await request(await webProvider.callback())
-			.get('/')
-			.set('Accept', 'text/html');
+		const resp = await request(webProvider.server.callback()).get('/').set('Accept', 'text/html');
 
 		expect(resp.text).toMatch(/<p>Looks like something broke!<\/p>/);
 	});
 
 	it('[html] should stream error ok', async () => {
-		const webProvider = getWebProvider();
-		webProvider.server.use(streamError);
+		const webProvider = await getWebProvider({}, async (web) => {
+			web.server.use(streamError);
+		});
 
-		const resp = await request(await webProvider.callback())
-			.get('/')
-			.set('Accept', 'text/html');
+		const resp = await request(webProvider.server.callback()).get('/').set('Accept', 'text/html');
 
 		expect(resp.text).toMatch(/<p>Looks like something broke!<\/p>/);
 		expect(resp.text).toMatch(/ENOENT/);
 	});
 
 	it('[html] should unsafe error ok', async () => {
-		const webProvider = getWebProvider();
-		webProvider.server.use(unsafeError);
+		const webProvider = await getWebProvider({}, async (web) => {
+			web.server.use(unsafeError);
+		});
 
-		const resp = await request(await webProvider.callback())
-			.get('/')
-			.set('Accept', 'text/html');
+		const resp = await request(webProvider.server.callback()).get('/').set('Accept', 'text/html');
 		expect(resp.text).toMatch(/<p>Looks like something broke!<\/p>/);
 		expect(resp.text).toMatch(/&lt;anonymous&gt;/);
 	});
@@ -99,81 +94,74 @@ describe('error-handler.test.ts', () => {
 	// ------------------
 
 	it('[json] should common error ok', async () => {
-		const webProvider = getWebProvider();
-		webProvider.server.use(commonError);
+		const webProvider = await getWebProvider({}, async (web) => {
+			web.server.use(commonError);
+		});
 
-		const resp = await request(await webProvider.callback())
-			.get('/')
-			.set('Accept', 'application/json');
+		const resp = await request(webProvider.server.callback()).get('/').set('Accept', 'application/json');
 		expect(resp.status).toBe(500);
 		expect(resp.body.message).toBe('foo is not defined');
 	});
 
 	it('[json] should stream error ok', async () => {
-		const webProvider = getWebProvider();
-		webProvider.server.use(streamError);
+		const webProvider = await getWebProvider({}, async (web) => {
+			web.server.use(streamError);
+		});
 
-		const resp = await request(await webProvider.callback())
-			.get('/')
-			.set('Accept', 'application/json');
+		const resp = await request(webProvider.server.callback()).get('/').set('Accept', 'application/json');
 		expect(resp.status).toBe(404);
 		expect(resp.error != null).toBe(true);
 		expect(resp.body.message).toMatch(/ENOENT/);
 	});
 
 	it('[json] should show status error when err.message not present', async () => {
-		const webProvider = getWebProvider();
-		webProvider.server.use(emptyError);
+		const webProvider = await getWebProvider({}, async (web) => {
+			web.server.use(emptyError);
+		});
 
-		const resp = await request(await webProvider.callback())
-			.get('/')
-			.set('Accept', 'application/json');
+		const resp = await request(webProvider.server.callback()).get('/').set('Accept', 'application/json');
 		expect(resp.status).toBe(500);
 		expect(resp.body.message).toBe('Internal Server Error');
 	});
 
 	it('[json] should wrap non-error object', async () => {
-		const webProvider = getWebProvider();
-		webProvider.server.use(() => {
-			throw 1;
+		const webProvider = await getWebProvider({}, async (web) => {
+			web.server.use(() => {
+				throw 1;
+			});
 		});
 
-		const resp = await request(await webProvider.callback())
-			.get('/')
-			.set('Accept', 'application/json');
+		const resp = await request(webProvider.server.callback()).get('/').set('Accept', 'application/json');
 
 		expect(resp.status).toBe(500);
 		expect(resp.body.message).toBe('non-error thrown: 1');
 	});
 
 	it('[json] should wrap mock error obj instead of Error instance', async () => {
-		const webProvider = getWebProvider();
 		const fn = jest.fn();
+		const webProvider = await getWebProvider({}, async (web) => {
+			web.server.on('error', (err) => {
+				fn();
 
-		webProvider.server.on('error', (err) => {
-			fn();
+				expect(err).toBeInstanceOf(Error);
+				expect(err.name).toBe('TypeError');
+				expect(err.message).toBe('mock error');
+				expect(err.stack).toMatch(/Error:/);
+			});
 
-			expect(err).toBeInstanceOf(Error);
-			expect(err.name).toBe('TypeError');
-			expect(err.message).toBe('mock error');
-			expect(err.stack).toMatch(/Error:/);
+			web.server.use(() => {
+				const err = {
+					name: 'TypeError',
+					message: 'mock error',
+					stack: new Error().stack,
+					status: 404,
+					headers: { foo: 'bar' },
+				};
+
+				throw err;
+			});
 		});
-
-		webProvider.server.use(() => {
-			const err = {
-				name: 'TypeError',
-				message: 'mock error',
-				stack: new Error().stack,
-				status: 404,
-				headers: { foo: 'bar' },
-			};
-
-			throw err;
-		});
-
-		const resp = await request(await webProvider.callback())
-			.get('/')
-			.set('Accept', 'application/json');
+		const resp = await request(webProvider.server.callback()).get('/').set('Accept', 'application/json');
 		expect(fn).toBeCalled();
 		expect(resp.status).toBe(404);
 		expect(resp.get('foo')).toBe('bar');
@@ -185,56 +173,51 @@ describe('error-handler.test.ts', () => {
 	// ------------------
 
 	it('[text] should common error ok', async () => {
-		const webProvider = getWebProvider();
-		webProvider.server.use(commonError);
+		const webProvider = await getWebProvider({}, async (web) => {
+			web.server.use(commonError);
+		});
 
-		const resp = await request(await webProvider.callback())
-			.get('/')
-			.set('Accept', 'text/plain');
+		const resp = await request(webProvider.server.callback()).get('/').set('Accept', 'text/plain');
 		expect(resp.status).toBe(500);
 		expect(resp.text).toBe('foo is not defined');
 	});
 
 	it('[text] should show error message ok', async () => {
-		const webProvider = getWebProvider();
-		webProvider.server.use(exposeError);
+		const webProvider = await getWebProvider({}, async (web) => {
+			web.server.use(exposeError);
+		});
 
-		const resp = await request(await webProvider.callback())
-			.get('/')
-			.set('Accept', 'text/plain');
+		const resp = await request(webProvider.server.callback()).get('/').set('Accept', 'text/plain');
 		expect(resp.status).toBe(500);
 		expect(resp.text).toBe('this message will be expose');
 	});
 
 	it('[text] should show status error when err.message not present', async () => {
-		const webProvider = getWebProvider();
-		webProvider.server.use(emptyError);
+		const webProvider = await getWebProvider({}, async (web) => {
+			web.server.use(emptyError);
+		});
 
-		const resp = await request(await webProvider.callback())
-			.get('/')
-			.set('Accept', 'text/plain');
+		const resp = await request(webProvider.server.callback()).get('/').set('Accept', 'text/plain');
 		expect(resp.status).toBe(500);
 		expect(resp.text).toBe('Internal Server Error');
 	});
 
 	it('[text] should set headers from error.headers ok', async () => {
-		const webProvider = getWebProvider();
-		webProvider.server.use(headerError);
+		const webProvider = await getWebProvider({}, async (web) => {
+			web.server.use(headerError);
+		});
 
-		const resp = await request(await webProvider.callback())
-			.get('/')
-			.set('Accept', 'text/plain');
+		const resp = await request(webProvider.server.callback()).get('/').set('Accept', 'text/plain');
 		expect(resp.status).toBe(500);
 		expect(resp.get('foo')).toBe('bar');
 	});
 
 	it('[text] should stream error ok', async () => {
-		const webProvider = getWebProvider();
-		webProvider.server.use(streamError);
+		const webProvider = await getWebProvider({}, async (web) => {
+			web.server.use(streamError);
+		});
 
-		const resp = await request(await webProvider.callback())
-			.get('/')
-			.set('Accept', 'text/plain');
+		const resp = await request(webProvider.server.callback()).get('/').set('Accept', 'text/plain');
 		expect(resp.status).toBe(404);
 		expect(resp.text).toMatch(/ENOENT/);
 	});
@@ -243,12 +226,11 @@ describe('error-handler.test.ts', () => {
 	// -- errorPage --
 	// ------------------
 	it('[redirect] should handle error and redirect to real error page', async () => {
-		const webProvider = getWebProvider({ onError: { errorPage: 'http://example/500.html' } });
-		webProvider.server.use(commonError);
+		const webProvider = await getWebProvider({ onError: { errorPage: 'http://example/500.html' } }, async (web) => {
+			web.server.use(commonError);
+		});
 
-		const resp = await request(await webProvider.callback())
-			.get('/')
-			.set('Accept', 'text/html');
+		const resp = await request(webProvider.server.callback()).get('/').set('Accept', 'text/html');
 
 		expect(resp.get('Content-Type')).toBe('text/html; charset=utf-8');
 		expect(resp.text).toBe('Redirecting to <a href="http://example/500.html">http://example/500.html</a>.');
@@ -256,12 +238,14 @@ describe('error-handler.test.ts', () => {
 	});
 
 	it('[redirect] should got text/plain header', async () => {
-		const webProvider = getWebProvider({ onError: { errorPage: () => 'http://example/400.html' } });
-		webProvider.server.use(commonError);
+		const webProvider = await getWebProvider(
+			{ onError: { errorPage: () => 'http://example/400.html' } },
+			async (web) => {
+				web.server.use(commonError);
+			},
+		);
 
-		const resp = await request(await webProvider.callback())
-			.get('/')
-			.set('Accept', 'text/plain');
+		const resp = await request(webProvider.server.callback()).get('/').set('Accept', 'text/plain');
 
 		expect(resp.get('Content-Type')).toBe('text/plain; charset=utf-8');
 		expect(resp.text).toBe('Redirecting to http://example/400.html.');
@@ -269,12 +253,14 @@ describe('error-handler.test.ts', () => {
 	});
 
 	it('[redirect] should show json when accept is json', async () => {
-		const webProvider = getWebProvider({ onError: { errorPage: 'http://example/500.html' } });
-		webProvider.server.use(commonError);
+		const webProvider = await getWebProvider(
+			{ onError: { errorPage: () => 'http://example/500.html' } },
+			async (web) => {
+				web.server.use(commonError);
+			},
+		);
 
-		const resp = await request(await webProvider.callback())
-			.get('/')
-			.set('Accept', 'application/json');
+		const resp = await request(webProvider.server.callback()).get('/').set('Accept', 'application/json');
 
 		expect(resp.get('Content-Type')).toBe('application/json; charset=utf-8');
 		expect(resp.body.message).toBe('foo is not defined');

@@ -23,11 +23,6 @@ export enum InjectableScope {
 	Resolution,
 }
 
-export interface Ordered {
-	/** Get the order value of this object. */
-	order(): number;
-}
-
 export type InjectionToken<T = any> = string | symbol | Constructor<T>;
 
 export type ObjectFactory = (...args: any[]) => any;

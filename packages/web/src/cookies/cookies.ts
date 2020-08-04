@@ -31,7 +31,7 @@ export class Cookies implements WebCookies {
 
 			const encrypter = this.getEncrypter();
 			const raw = name + '=' + value;
-			const success = encrypter.verify(Buffer.from(raw), sigValue);
+			const success = encrypter.verify(raw, sigValue);
 
 			if (!success) {
 				// can not match any key, remove ${name}.sig
@@ -39,7 +39,7 @@ export class Cookies implements WebCookies {
 				return;
 			} else {
 				// not signed by the first key, update sigValue
-				this.set(sigName, encrypter.sign(Buffer.from(raw)), { signed: false });
+				this.set(sigName, encrypter.sign(raw), { signed: false });
 			}
 			return value;
 		}
@@ -68,7 +68,7 @@ export class Cookies implements WebCookies {
 		// encrypt
 		if (opts.encrypt) {
 			const encrypter = this.getEncrypter();
-			value = value && base64Encode(encrypter.encrypt(Buffer.from(value)), true);
+			value = value && base64Encode(encrypter.encrypt(value), true);
 		}
 
 		// http://browsercookielimits.squawky.net/

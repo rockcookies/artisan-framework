@@ -1,1 +1,1 @@
-export { ServiceProvider } from './application-protocol';
+export { ProviderLifecycle, Ordered, Namable } from './application-protocol';

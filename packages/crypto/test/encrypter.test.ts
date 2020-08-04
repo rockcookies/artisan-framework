@@ -22,14 +22,16 @@ describe('encrypter.test.ts', () => {
 	}
 
 	it('should throw without keys', async () => {
+		const k = await getEncryptionProvider({ algorithms: [] });
+
 		expect(() => {
-			getEncryptionProvider({ algorithms: [] }).encrypt('hello');
+			k.encrypt('hello');
 		}).toThrowError(`config '${ENCRYPTION_PROVIDER_CONFIG_KEY}.algorithms' must be provided`);
 	});
 
-	it('should encrypt and decrypt success', () => {
-		const kgA = getEncryptionProvider({ algorithms: [foo, bar] });
-		const kgB = getEncryptionProvider({ algorithms: [another, foo] });
+	it('should encrypt and decrypt success', async () => {
+		const kgA = await getEncryptionProvider({ algorithms: [foo, bar] });
+		const kgB = await getEncryptionProvider({ algorithms: [another, foo] });
 
 		const encrypted = kgA.encrypt('hello');
 
@@ -37,9 +39,9 @@ describe('encrypter.test.ts', () => {
 		expect(decrypt(kgB.decrypt(encrypted))).toBe('hello');
 	});
 
-	it('should decrypt error return false', () => {
-		const kgA = getEncryptionProvider({ algorithms: [foo, bar] });
-		const kgB = getEncryptionProvider({ algorithms: [another] });
+	it('should decrypt error return false', async () => {
+		const kgA = await getEncryptionProvider({ algorithms: [foo, bar] });
+		const kgB = await getEncryptionProvider({ algorithms: [another] });
 
 		const encrypted = kgA.encrypt('hello');
 
@@ -47,9 +49,9 @@ describe('encrypter.test.ts', () => {
 		expect(decrypt(kgB.decrypt(encrypted))).toBe(false);
 	});
 
-	it('should signed and verify success', () => {
-		const kgA = getEncryptionProvider({ algorithms: [foo, bar] });
-		const kgB = getEncryptionProvider({ algorithms: [another, foo] });
+	it('should signed and verify success', async () => {
+		const kgA = await getEncryptionProvider({ algorithms: [foo, bar] });
+		const kgB = await getEncryptionProvider({ algorithms: [another, foo] });
 
 		const buf = Buffer.from('hello', 'utf8');
 		const signed = kgA.sign(buf);
@@ -58,9 +60,9 @@ describe('encrypter.test.ts', () => {
 		expect(kgB.verify(buf, signed)).toBe(true);
 	});
 
-	it('should signed and verify failed return false', () => {
-		const kgA = getEncryptionProvider({ algorithms: [foo, bar] });
-		const kgB = getEncryptionProvider({ algorithms: [another] });
+	it('should signed and verify failed return false', async () => {
+		const kgA = await getEncryptionProvider({ algorithms: [foo, bar] });
+		const kgB = await getEncryptionProvider({ algorithms: [another] });
 
 		const buf = Buffer.from('hello', 'utf8');
 		const signed = kgA.sign(buf);

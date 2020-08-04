@@ -3,8 +3,10 @@ import {
 	autowired,
 	Dictionary,
 	LoggerProvider,
+	Namable,
+	Ordered,
+	ProviderLifecycle,
 	value,
-	ServiceProvider,
 } from '@artisan-framework/core';
 import {
 	EncryptionAlgorithm,
@@ -29,44 +31,50 @@ const crypt = (cipher: crypto.Cipher | crypto.Decipher, data: Buffer): Buffer =>
 	return Buffer.concat([text, pad]);
 };
 
-export class ArtisanEncryptionProvider implements EncryptionProvider, ServiceProvider {
-	readonly algorithms: Array<Required<EncryptionAlgorithm>>;
+export class ArtisanEncryptionProvider implements EncryptionProvider, ProviderLifecycle, Namable, Ordered {
+	private _algorithms: Array<Required<EncryptionAlgorithm>>;
 
 	@autowired(LoggerProvider)
 	_logger: LoggerProvider;
 
-	constructor(
-		@value(ENCRYPTION_PROVIDER_CONFIG_KEY)
-		config?: EncryptionProviderConfig,
-	) {
-		this.algorithms = [...(config ? config.algorithms : [])].map((algorithm) => ({
-			...algorithm,
-			hmac: algorithm.hmac || 'sha256',
-			cipher: algorithm.cipher || 'aes-256-cbc',
-		}));
-	}
+	@value(ENCRYPTION_PROVIDER_CONFIG_KEY)
+	_config?: EncryptionProviderConfig;
 
-	async start(): Promise<void> {
-		this._logger.info('[http-client] created');
-	}
-
-	async stop(): Promise<void> {
-		this._logger.info('[http-client] closed');
+	name(): string {
+		return 'artisan-encryption';
 	}
 
 	order(): number {
 		return ENCRYPTION_PROVIDER_ORDER;
 	}
 
+	async start(): Promise<void> {
+		this._algorithms = [...(this._config ? this._config.algorithms : [])].map((algorithm) => ({
+			...algorithm,
+			hmac: algorithm.hmac || 'sha256',
+			cipher: algorithm.cipher || 'aes-256-cbc',
+		}));
+
+		if (this._algorithms.length <= 0) {
+			throw new ArtisanException(`config '${ENCRYPTION_PROVIDER_CONFIG_KEY}.algorithms' must be provided`);
+		}
+
+		this._logger.info('[encryption] created', { algorithms_size: this._algorithms.length });
+	}
+
+	async stop(): Promise<void> {
+		this._logger.info('[encryption] closed');
+	}
+
 	encrypt(data: Buffer | string): Buffer {
-		const { cipher: algorithm, key, iv } = this._getAlgorithms()[0];
+		const { cipher: algorithm, key, iv } = this._algorithms[0];
 
 		const cipher = crypto.createCipheriv(algorithm, key, iv);
 		return crypt(cipher, this._convertToBuffer(data));
 	}
 
 	decrypt(data: Buffer | string): Buffer | false {
-		const algorithms = this._getAlgorithms();
+		const algorithms = this._algorithms;
 		const length = algorithms.length;
 
 		for (let i = 0; i < length; i++) {
@@ -87,14 +95,14 @@ export class ArtisanEncryptionProvider implements EncryptionProvider, ServicePro
 
 	sign(data: Buffer | string): string {
 		// default to the first key
-		const { hmac, key } = this._getAlgorithms()[0];
+		const { hmac, key } = this._algorithms[0];
 		return this._sign(data, hmac, key);
 	}
 
 	verify(data: Buffer | string, digest: string): boolean {
 		const digestBuf = this._convertToBuffer(digest);
 
-		for (const { hmac, key } of this._getAlgorithms()) {
+		for (const { hmac, key } of this._algorithms) {
 			const dataBuf = this._convertToBuffer(this._sign(data, hmac, key));
 
 			// avoid timing attack
@@ -105,14 +113,6 @@ export class ArtisanEncryptionProvider implements EncryptionProvider, ServicePro
 		}
 
 		return false;
-	}
-
-	private _getAlgorithms(): Array<Required<EncryptionAlgorithm>> {
-		if (this.algorithms.length <= 0) {
-			throw new ArtisanException(`config '${ENCRYPTION_PROVIDER_CONFIG_KEY}.algorithms' must be provided`);
-		}
-
-		return this.algorithms;
 	}
 
 	private _sign(data: Buffer | string, hmac: string, key: string): string {

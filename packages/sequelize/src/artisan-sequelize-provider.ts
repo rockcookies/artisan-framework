@@ -2,21 +2,23 @@ import {
 	ArtisanException,
 	autowired,
 	LoggerProvider,
-	ServiceProvider,
+	Namable,
+	Ordered,
+	ProviderLifecycle,
 	TraceContext,
 	value,
 } from '@artisan-framework/core';
+import { Sequelize } from 'sequelize/types';
 import { ArtisanSequelize } from './artisan-sequelize';
 import {
+	SequelizeProvider,
 	SequelizeProviderConfig,
 	SEQUELIZE_PROVIDER_CONFIG_KEY,
 	SEQUELIZE_PROVIDER_ORDER,
-	SequelizeProvider,
 } from './sequelize-protocol';
-import { SequelizeSessionManager, ArtisanSequelizeSessionManager } from './session';
-import { Sequelize } from 'sequelize/types';
+import { ArtisanSequelizeSessionManager, SequelizeSessionManager } from './session';
 
-export class ArtisanSequelizeProvider implements ServiceProvider, SequelizeProvider {
+export class ArtisanSequelizeProvider implements SequelizeProvider, ProviderLifecycle, Namable, Ordered {
 	@autowired(LoggerProvider)
 	public logger: LoggerProvider;
 
@@ -24,6 +26,10 @@ export class ArtisanSequelizeProvider implements ServiceProvider, SequelizeProvi
 	private _config?: SequelizeProviderConfig;
 
 	private _databases = new Map<string, ArtisanSequelize>();
+
+	name(): string {
+		return 'artisan-sequelize';
+	}
 
 	order(): number {
 		return SEQUELIZE_PROVIDER_ORDER;

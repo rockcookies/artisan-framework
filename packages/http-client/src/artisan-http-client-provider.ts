@@ -1,6 +1,6 @@
 import urllib = require('urllib');
 import Agent = require('agentkeepalive');
-import { autowired, LoggerProvider, ServiceProvider, value } from '@artisan-framework/core';
+import { autowired, LoggerProvider, ProviderLifecycle, Namable, value, Ordered } from '@artisan-framework/core';
 import { URL } from 'url';
 import {
 	HttpClientProvider,
@@ -10,7 +10,7 @@ import {
 	HTTP_CLIENT_PROVIDER_ORDER,
 } from './http-client-protocol';
 
-export class ArtisanHttpClientProvider implements HttpClientProvider, ServiceProvider {
+export class ArtisanHttpClientProvider implements HttpClientProvider, ProviderLifecycle, Namable, Ordered {
 	@autowired(LoggerProvider)
 	_logger: LoggerProvider;
 
@@ -18,6 +18,14 @@ export class ArtisanHttpClientProvider implements HttpClientProvider, ServicePro
 	_config?: HttpClientProviderConfig;
 
 	_client: urllib.HttpClient;
+
+	name(): string {
+		return 'artisan-http-client';
+	}
+
+	order(): number {
+		return HTTP_CLIENT_PROVIDER_ORDER;
+	}
 
 	async start(): Promise<void> {
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -51,15 +59,12 @@ export class ArtisanHttpClientProvider implements HttpClientProvider, ServicePro
 
 		this._client = urllib.create(options);
 
-		this._logger.info('[http-client] created', options);
+		this._logger.debug('[http-client] initialized default options', options);
+		this._logger.info('[http-client] created');
 	}
 
 	async stop(): Promise<void> {
 		this._logger.info('[http-client] closed');
-	}
-
-	order(): number {
-		return HTTP_CLIENT_PROVIDER_ORDER;
 	}
 
 	async request<T = any>(url: string | URL, _options?: HttpRequestOptions): Promise<urllib.HttpClientResponse<T>> {

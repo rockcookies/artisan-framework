@@ -40,7 +40,7 @@ const createLogging = (params: {
 };
 
 export class ArtisanSequelize {
-	private _name: string;
+	private _key: string;
 	private _logPrefix: string;
 	private _logger: LoggerProvider;
 	private _logging?: boolean;
@@ -70,7 +70,7 @@ export class ArtisanSequelize {
 		});
 
 		this.entities = new Map<Constructor<any>, ModelCtor<any>>();
-		this._name = name;
+		this._key = name;
 		this._logPrefix = logPrefix;
 		this._logger = logger;
 		this._logging = logging;
@@ -79,7 +79,7 @@ export class ArtisanSequelize {
 	async authenticate(): Promise<void> {
 		const max = 3;
 
-		this._logger.debug(`${this._logPrefix} connecting...`);
+		this._logger.info(`${this._logPrefix} connecting...`);
 
 		for (let i = 1; i <= max; i++) {
 			try {
@@ -102,13 +102,13 @@ export class ArtisanSequelize {
 	}
 
 	async close(): Promise<void> {
-		this._logger.debug(`${this._logPrefix} closing...`);
+		this._logger.info(`${this._logPrefix} closing...`);
 
 		try {
 			await this.instance.close();
 			this._logger.info(`${this._logPrefix} closed`);
 		} catch (err) {
-			this._logger.warn(`${this._logPrefix} close error`, { err });
+			this._logger.warn(`${this._logPrefix} close error: ${err}`, { err });
 		}
 	}
 
@@ -125,7 +125,7 @@ export class ArtisanSequelize {
 		const model = this.entities.get(entity);
 
 		if (!model) {
-			throw new ArtisanException(`Undefined entity class<${entity.name}> in database(${this._name})`);
+			throw new ArtisanException(`Undefined entity class<${entity.name}> in database(${this._key})`);
 		}
 
 		return model;
@@ -139,7 +139,7 @@ export class ArtisanSequelize {
 
 			if (this.entities.has(entityClass)) {
 				throw new ArtisanException(
-					`Entity class<${entityClass.name}> already defined in database(${this._name})`,
+					`Entity class<${entityClass.name}> already defined in database(${this._key})`,
 				);
 			}
 

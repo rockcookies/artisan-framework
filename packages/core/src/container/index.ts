@@ -30,6 +30,5 @@ export {
 	InjectionToken,
 	InjectableScope,
 	MethodInvokeContext,
-	Ordered,
 } from './container-protocol';
 export { ArtisanContainerProvider, globalContainer } from './artisan-container-provider';
