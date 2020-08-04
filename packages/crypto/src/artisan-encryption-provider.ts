@@ -32,7 +32,7 @@ const crypt = (cipher: crypto.Cipher | crypto.Decipher, data: Buffer): Buffer =>
 };
 
 export class ArtisanEncryptionProvider implements EncryptionProvider, ProviderLifecycle, Namable, Ordered {
-	private _algorithms: Array<Required<EncryptionAlgorithm>>;
+	private _algorithms: Array<Required<EncryptionAlgorithm>> = [];
 
 	@autowired(LoggerProvider)
 	_logger: LoggerProvider;
@@ -55,10 +55,6 @@ export class ArtisanEncryptionProvider implements EncryptionProvider, ProviderLi
 			cipher: algorithm.cipher || 'aes-256-cbc',
 		}));
 
-		if (this._algorithms.length <= 0) {
-			throw new ArtisanException(`config '${ENCRYPTION_PROVIDER_CONFIG_KEY}.algorithms' must be provided`);
-		}
-
 		this._logger.info('[encryption] created', { algorithms_size: this._algorithms.length });
 	}
 
@@ -67,14 +63,14 @@ export class ArtisanEncryptionProvider implements EncryptionProvider, ProviderLi
 	}
 
 	encrypt(data: Buffer | string): Buffer {
-		const { cipher: algorithm, key, iv } = this._algorithms[0];
+		const { cipher: algorithm, key, iv } = this._getAlgorithms()[0];
 
 		const cipher = crypto.createCipheriv(algorithm, key, iv);
 		return crypt(cipher, this._convertToBuffer(data));
 	}
 
 	decrypt(data: Buffer | string): Buffer | false {
-		const algorithms = this._algorithms;
+		const algorithms = this._getAlgorithms();
 		const length = algorithms.length;
 
 		for (let i = 0; i < length; i++) {
@@ -95,14 +91,14 @@ export class ArtisanEncryptionProvider implements EncryptionProvider, ProviderLi
 
 	sign(data: Buffer | string): string {
 		// default to the first key
-		const { hmac, key } = this._algorithms[0];
+		const { hmac, key } = this._getAlgorithms()[0];
 		return this._sign(data, hmac, key);
 	}
 
 	verify(data: Buffer | string, digest: string): boolean {
 		const digestBuf = this._convertToBuffer(digest);
 
-		for (const { hmac, key } of this._algorithms) {
+		for (const { hmac, key } of this._getAlgorithms()) {
 			const dataBuf = this._convertToBuffer(this._sign(data, hmac, key));
 
 			// avoid timing attack
@@ -113,6 +109,14 @@ export class ArtisanEncryptionProvider implements EncryptionProvider, ProviderLi
 		}
 
 		return false;
+	}
+
+	private _getAlgorithms(): Array<Required<EncryptionAlgorithm>> {
+		if (this._algorithms.length <= 0) {
+			throw new ArtisanException(`config '${ENCRYPTION_PROVIDER_CONFIG_KEY}.algorithms' must be provided`);
+		}
+
+		return this._algorithms;
 	}
 
 	private _sign(data: Buffer | string, hmac: string, key: string): string {
