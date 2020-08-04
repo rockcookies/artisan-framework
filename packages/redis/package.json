@@ -1,6 +1,6 @@
 {
 	"name": "@artisan-framework/redis",
-	"version": "0.1.9-alpha.0",
+	"version": "0.1.10-alpha.0",
 	"description": "",
 	"license": "MIT",
 	"main": "build/index.js",
@@ -54,7 +54,7 @@
 	},
 	"gitHead": "8ddc2270fc0975fb856cf9fea62c7ce80297c393",
 	"dependencies": {
-		"@artisan-framework/core": "^0.1.9-alpha.0",
+		"@artisan-framework/core": "^0.1.10-alpha.0",
 		"@types/ioredis": "^4.17.3",
 		"@types/redlock": "^4.0.1",
 		"ioredis": "^4.17.3",
