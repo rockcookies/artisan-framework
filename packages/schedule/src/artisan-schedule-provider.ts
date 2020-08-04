@@ -6,10 +6,10 @@ export class ArtisanScheduleProvider implements ScheduleProvider, ProviderLifecy
 	@autowired(LoggerProvider)
 	_logger: LoggerProvider;
 
-	@autowiredAll(ScheduleTask)
+	@autowiredAll({ token: ScheduleTask, optional: true })
 	_tasks?: ScheduleTask[];
 
-	_runners: ArtisanScheduleRunner[];
+	_runners: ArtisanScheduleRunner[] = [];
 
 	name(): string {
 		return 'artisan-schedule';

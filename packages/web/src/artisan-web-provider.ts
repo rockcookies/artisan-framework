@@ -45,7 +45,7 @@ const ROUTER_PROXY_METHODS = ['head', 'options', 'get', 'put', 'patch', 'post', 
 
 export class ArtisanWebProvider implements WebProvider, ProviderLifecycle, Ordered, Namable {
 	server: Koa<Dictionary, WebContext>;
-	router: Router<Dictionary, WebContext>;
+	router: WebRouter<Dictionary, WebContext>;
 
 	private _terminator?: HttpTerminator;
 

@@ -69,7 +69,7 @@ export type WebContext = Koa.Context;
 
 export interface WebProvider {
 	server: Koa<Dictionary, WebContext>;
-	router: Router<Dictionary, WebContext>;
+	router: WebRouter<Dictionary, WebContext>;
 }
 
 export interface WebInitializationProvider {
