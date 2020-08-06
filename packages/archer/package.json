@@ -1,6 +1,6 @@
 {
 	"name": "@artisan-framework/archer",
-	"version": "0.1.14-alpha.0",
+	"version": "0.1.15-alpha.0",
 	"description": "",
 	"license": "MIT",
 	"main": "build/index.js",
@@ -55,7 +55,7 @@
 		"typescript": "^3.9.7"
 	},
 	"dependencies": {
-		"@artisan-framework/core": "^0.1.14-alpha.0"
+		"@artisan-framework/core": "^0.1.15-alpha.0"
 	},
 	"gitHead": "2e1d7006c7e770e5b2e2dc559aeeeaa3cae5fd6f"
 }
