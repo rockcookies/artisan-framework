@@ -3,7 +3,7 @@ import { WebContext } from '../web-protocol';
 
 export const WebErrorHandler = Symbol('Artisan:WebErrorHandler');
 
-export const DEFAULT_WEB_ERROR_HANDLER_ORDER = 500;
+export const DEFAULT_WEB_ERROR_HANDLER_ORDER = 10000;
 
 export interface HttpErrorOptions extends ErrorOptions {
 	status: number;
@@ -20,7 +20,7 @@ export interface WebOnErrorOptions {
 
 export interface WebErrorHandler extends Ordered {
 	/** Indicates whether or not this WebErrorHandler can handle the supplied view name. */
-	canHandle(ctx: WebContext, err: any): boolean;
+	canHandle(err: any, ctx: WebContext): boolean;
 	/** handle Error */
-	handle(ctx: WebContext, err: any): void;
+	handle(err: any, ctx: WebContext): void;
 }

@@ -1,7 +1,6 @@
-import { TraceContext, value } from '@artisan-framework/core';
+import { createTraceContext, TraceContext, value } from '@artisan-framework/core';
 import { WebContext, WebProviderConfig, WEB_PROVIDER_CONFIG_KEY } from '../web-protocol';
 import { WebTraceOptions, WebTraceProvider } from './trace-protocol';
-import crypto = require('crypto');
 
 export class ArtisanWebTraceProvider implements WebTraceProvider {
 	private options: Required<Pick<WebTraceOptions, 'traceIdRequestField' | 'traceSpanIdRequestField'>>;
@@ -34,8 +33,9 @@ export class ArtisanWebTraceProvider implements WebTraceProvider {
 		) {
 			remote = true;
 		} else {
-			traceId = crypto.randomBytes(16).toString('hex');
-			spanId = crypto.randomBytes(4).toString('hex');
+			const trace = createTraceContext();
+			traceId = trace.traceId;
+			spanId = trace.spanId;
 		}
 
 		return Promise.resolve({ traceId, spanId, isRemote: remote });

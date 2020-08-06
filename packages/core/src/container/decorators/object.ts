@@ -18,7 +18,7 @@ export interface ValueOptions {
 }
 
 export interface AutowiredOptions {
-	token?: InjectionToken | LazyConstructor;
+	token: InjectionToken | LazyConstructor;
 	optional?: boolean;
 }
 
@@ -98,7 +98,7 @@ function tagProperty(target: any, metadata: TaggedMetadata, propertyKey: string)
 
 function decorateAutowired(
 	metadata: Partial<TaggedAutowiredMetadata>,
-	options?: InjectionToken | LazyConstructor | AutowiredOptions,
+	options: InjectionToken | LazyConstructor | AutowiredOptions,
 ) {
 	return function autowired(target: any, propertyKey: string, index?: number): void {
 		let token: InjectionToken | LazyConstructor | undefined;
@@ -106,18 +106,9 @@ function decorateAutowired(
 
 		if (isNormalToken(options) || isConstructorToken(options)) {
 			token = options;
-		} else if (options) {
+		} else {
 			token = options.token;
 			optional = !!options.optional;
-		}
-
-		if (!token) {
-			if (typeof index === 'number') {
-				const params: any[] = Reflect.getMetadata('design:paramtypes', target) || [];
-				token = params[index];
-			} else {
-				token = Reflect.getMetadata('design:type', target, propertyKey);
-			}
 		}
 
 		if (!token) {
@@ -126,7 +117,7 @@ function decorateAutowired(
 
 		const meta: TaggedAutowiredMetadata = {
 			type: 'autowired',
-			token: token as any,
+			token,
 			optional,
 			isArray: false,
 			...metadata,
@@ -164,7 +155,7 @@ export function autowiredAll(options: InjectionToken | LazyConstructor | Autowir
 	return decorateAutowired({ isArray: true }, options);
 }
 
-export function autowired(options?: InjectionToken | LazyConstructor | AutowiredOptions) {
+export function autowired(options: InjectionToken | LazyConstructor | AutowiredOptions) {
 	return decorateAutowired({ isArray: false }, options);
 }
 

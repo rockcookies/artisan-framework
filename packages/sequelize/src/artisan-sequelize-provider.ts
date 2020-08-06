@@ -40,6 +40,8 @@ export class ArtisanSequelizeProvider implements SequelizeProvider, ProviderLife
 
 		const entries = Object.entries(config.datasources || {});
 
+		this.logger.info('[sequelize] datasources initialing...', { datasource_keys: entries.map(([key]) => key) });
+
 		const datasources = entries.map(([key, options]): [string, ArtisanSequelize] => {
 			const db = new ArtisanSequelize({
 				...options,

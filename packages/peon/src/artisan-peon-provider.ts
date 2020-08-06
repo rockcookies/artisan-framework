@@ -62,7 +62,7 @@ export class ArtisanPeonProvider implements PeonProvider {
 		const startTime = Date.now();
 		const startTimeout = this._config?.startTimeout || 10 * 1000;
 
-		this._logger.info('[peon] staring...', {
+		this._logger.info('[peon] application staring...', {
 			process_env: process.env.NODE_ENV,
 			start_timeout: startTimeout,
 		});
@@ -71,11 +71,16 @@ export class ArtisanPeonProvider implements PeonProvider {
 		Promise.race([this._setupProviders(tokens).then(() => true), sleep(startTimeout).then(() => false)]).then(
 			(success) => {
 				if (success) {
-					this._logger.info(`[peon] started in ${Date.now() - startTime}ms`, {
+					this._logger.info('[peon] application started', {
 						process_env: process.env.NODE_ENV,
+						elapsed_time: Date.now() - startTime,
 					});
 				} else {
-					this._logger.error(`[peon] start timeout: ${Date.now() - startTime}ms`);
+					this._logger.error('[peon] application start timeout', {
+						start_timeout: startTimeout,
+						elapsed_time: Date.now() - startTime,
+					});
+
 					this._exit(1);
 				}
 			},
@@ -120,10 +125,14 @@ export class ArtisanPeonProvider implements PeonProvider {
 
 			try {
 				await provider.start();
-				this._logger.info(`[peon] ${providerName} started in ${Date.now() - startTime}ms`);
+				this._logger.info(`[peon] ${providerName} started`, { elapsed_time: Date.now() - startTime });
 				this._activeProviders.push(_provider);
 			} catch (err) {
-				this._logger.error(`[peon] start ${providerName} error: ${err}`, { err });
+				this._logger.error(`[peon] start ${providerName} error: ${err}`, {
+					elapsed_time: Date.now() - startTime,
+					err,
+				});
+
 				this._exit(1);
 			}
 		}
@@ -133,20 +142,23 @@ export class ArtisanPeonProvider implements PeonProvider {
 		for (let i = this._activeProviders.length - 1; i >= 0; i--) {
 			const [providerName, provider] = this._activeProviders[i];
 
-			this._logger.debug(`[peon] ${providerName} closing...`);
+			this._logger.debug(`[peon] stopping ${providerName}...`);
 
 			if (typeof provider.stop !== 'function') {
 				this._logger.info(`[peon] ${providerName} stop !== 'function', skip it`);
 				continue;
 			}
 
-			const stopTime = Date.now();
+			const startTime = Date.now();
 
 			try {
 				await provider.stop();
-				this._logger.debug(`[peon] ${providerName} closed in ${Date.now() - stopTime}ms`);
+				this._logger.debug(`[peon] ${providerName} stopped`, { elapsed_time: Date.now() - startTime });
 			} catch (err) {
-				this._logger.error(`[peon] ${providerName} close error: ${err}`, { err });
+				this._logger.error(`[peon] ${providerName} stop error: ${err}`, {
+					elapsed_time: Date.now() - startTime,
+					err,
+				});
 			}
 		}
 	}
@@ -184,17 +196,21 @@ export class ArtisanPeonProvider implements PeonProvider {
 			this._exited = true;
 		}
 
-		const stopTime = Date.now();
+		const startTime = Date.now();
 		const stopTimeout = this._config?.stopTimeout || 10 * 1000;
-		this._logger.info(`[peon] commencing graceful shutdown with exit code: ${code}`, {
+
+		this._logger.info(`[peon] commencing application graceful shutdown with exit code: ${code}`, {
 			stop_timeout: stopTimeout,
 		});
 
 		Promise.race([this._stopProviders().then(() => true), sleep(stopTimeout).then(() => false)]).then((success) => {
 			if (success) {
-				this._logger.info(`[peon] exited in ${Date.now() - stopTime}ms`);
+				this._logger.info('[peon] application exited', { elapsed_time: Date.now() - startTime });
 			} else {
-				this._logger.error('[peon] exit timeout');
+				this._logger.error('[peon] application exit timeout', {
+					stop_timeout: stopTimeout,
+					elapsed_time: Date.now() - startTime,
+				});
 			}
 
 			process.exit(code);

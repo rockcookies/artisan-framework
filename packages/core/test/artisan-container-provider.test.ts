@@ -132,7 +132,7 @@ describe('artisan-container-provider.test.ts', () => {
 		}
 
 		class Foo {
-			constructor(@autowired() public myBar: Bar) {}
+			constructor(@autowired(Bar) public myBar: Bar) {}
 		}
 
 		container.registerClass(Bar, Bar);
@@ -168,7 +168,10 @@ describe('artisan-container-provider.test.ts', () => {
 		}
 
 		class MyOptional {
-			constructor(@autowired() public myBar: Bar, @autowired({ optional: true }) public myFoo?: Foo) {}
+			constructor(
+				@autowired(Bar) public myBar: Bar,
+				@autowired({ token: Foo, optional: true }) public myFoo?: Foo,
+			) {}
 		}
 
 		container.registerClass(Bar, Bar);
@@ -186,7 +189,7 @@ describe('artisan-container-provider.test.ts', () => {
 
 		expect(() => {
 			class Foo {
-				constructor(@autowired() @autowired() public myBar: Bar) {}
+				constructor(@autowired(Bar) @autowired(Bar) public myBar: Bar) {}
 			}
 
 			container.registerClass(Foo, Foo);
@@ -227,16 +230,16 @@ describe('artisan-container-provider.test.ts', () => {
 		}
 
 		class B {
-			@autowired()
+			@autowired(A)
 			public a: A;
 			@autowired(lazy(() => C))
 			public c: C;
 		}
 
 		class C {
-			@autowired()
+			@autowired(A)
 			public a: A;
-			@autowired()
+			@autowired(B)
 			public b: B;
 		}
 
@@ -307,15 +310,15 @@ describe('artisan-container-provider.test.ts', () => {
 		class A {}
 
 		class B {
-			@autowired()
+			@autowired(A)
 			public a: A;
 		}
 
 		class C {
-			@autowired()
+			@autowired(A)
 			public a: A;
 
-			@autowired()
+			@autowired(B)
 			public b: B;
 		}
 
@@ -334,17 +337,17 @@ describe('artisan-container-provider.test.ts', () => {
 
 	it('resolve hierarchical', () => {
 		class A {
-			@autowired()
+			@autowired(A)
 			public a: A;
 		}
 
 		class B {
-			@autowired()
+			@autowired(A)
 			public a: A;
 		}
 
 		class C extends B {
-			@autowired()
+			@autowired(B)
 			public b: B;
 		}
 

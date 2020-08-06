@@ -1,5 +1,5 @@
 {
-	"name": "@artisan-framework/validate",
+	"name": "@artisan-framework/archer",
 	"version": "0.1.14-alpha.0",
 	"description": "",
 	"license": "MIT",
@@ -41,12 +41,17 @@
 		"eslint": "^7.6.0",
 		"eslint-config-prettier": "^6.11.0",
 		"eslint-plugin-prettier": "^3.1.4",
+		"immer": "^7.0.7",
 		"jest": "^26.2.2",
 		"lerna": "^3.22.1",
 		"prettier": "^2.0.5",
+		"redux": "^4.0.5",
+		"redux-observable": "^1.2.0",
 		"rimraf": "^3.0.2",
+		"rxjs": "^6.6.2",
 		"ts-jest": "^26.1.4",
 		"ts-node": "^8.10.2",
+		"typesafe-actions": "^5.1.0",
 		"typescript": "^3.9.7"
 	},
 	"dependencies": {

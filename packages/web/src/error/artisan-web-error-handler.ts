@@ -84,7 +84,7 @@ export class ArtisanWebErrorHandler implements WebErrorHandler {
 		return true;
 	}
 
-	handle(ctx: WebContext, err: any): void {
+	handle(err: any, ctx: WebContext): void {
 		ctx.status = detectErrorStatus(err);
 		ctx.set(err.headers);
 

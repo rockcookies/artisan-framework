@@ -1,7 +1,6 @@
-import { ArtisanException, LoggerProvider, TraceContext } from '@artisan-framework/core';
+import { ArtisanException, LoggerProvider, TraceContext, createTraceContext } from '@artisan-framework/core';
 import { parseExpression } from 'cron-parser';
 import { ScheduleOptions, ScheduleTask } from './schedule-protocol';
-import crypto = require('crypto');
 import safeTimers = require('safe-timers');
 import ms = require('humanize-ms');
 import dayJs = require('dayjs');
@@ -74,10 +73,7 @@ export class ArtisanScheduleRunner {
 	}
 
 	run() {
-		const trace: TraceContext = {
-			traceId: crypto.randomBytes(16).toString('hex'),
-			spanId: crypto.randomBytes(4).toString('hex'),
-		};
+		const trace: TraceContext = createTraceContext();
 
 		this._execution = [
 			trace,

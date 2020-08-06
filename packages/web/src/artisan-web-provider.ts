@@ -58,8 +58,8 @@ export class ArtisanWebProvider implements WebProvider, ProviderLifecycle, Order
 	@autowired(DependencyContainer)
 	private _container: DependencyContainer;
 
-	@autowired({ token: EncryptionProvider, optional: true })
-	private _encrypter?: EncryptionProvider;
+	@autowired(EncryptionProvider)
+	private _encryptionProvider: EncryptionProvider;
 
 	@autowired(WebSessionProvider)
 	private _sessionProvider: WebSessionProvider;
@@ -294,7 +294,7 @@ export class ArtisanWebProvider implements WebProvider, ProviderLifecycle, Order
 							return this[ArtisanCookies];
 						}
 
-						this[ArtisanCookies] = new Cookies(this, web._encrypter);
+						this[ArtisanCookies] = new Cookies(this, web._encryptionProvider);
 						return this[ArtisanCookies];
 					},
 				},
@@ -351,8 +351,8 @@ export class ArtisanWebProvider implements WebProvider, ProviderLifecycle, Order
 		if (headerSent) return;
 
 		for (const handler of handlers) {
-			if (handler.canHandle(ctx, err)) {
-				handler.handle(ctx, err);
+			if (handler.canHandle(err, ctx)) {
+				handler.handle(err, ctx);
 			}
 		}
 	}

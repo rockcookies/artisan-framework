@@ -20,7 +20,11 @@ export class ArtisanScheduleProvider implements ScheduleProvider, ProviderLifecy
 	}
 
 	async start(): Promise<void> {
-		for (const task of this._tasks || []) {
+		const tasks = this._tasks || [];
+
+		this._logger.info('[schedule] schedule tasks initialing...', { task_size: tasks.length });
+
+		for (const task of tasks) {
 			this._runners.push(new ArtisanScheduleRunner(task, { logger: this._logger }));
 		}
 

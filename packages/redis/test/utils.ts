@@ -2,14 +2,8 @@ import fs = require('fs');
 import util = require('util');
 import path = require('path');
 import stripJsonComments = require('strip-json-comments');
-import {
-	AbstractConfigProvider,
-	ConfigProvider,
-	globalContainer,
-	LoggerProvider,
-	ConsoleLoggerProvider,
-} from '@artisan-framework/core';
-import { ArtisanRedisProvider, RedisClientOptions, RedisProviderConfig, RedisProvider } from '../src';
+import { AbstractConfigProvider, ConfigProvider, globalContainer } from '@artisan-framework/core';
+import { ArtisanRedisProvider, RedisClientOptions, RedisProvider, RedisProviderConfig } from '../src';
 
 const readFile = util.promisify(fs.readFile);
 
@@ -22,8 +16,6 @@ export async function getRedisProvider(): Promise<ArtisanRedisProvider> {
 	const config: RedisProviderConfig = {
 		clients: { default: { ...redisOptions } },
 	};
-
-	container.registerClass(LoggerProvider, ConsoleLoggerProvider);
 
 	container.registerClass(
 		ConfigProvider,

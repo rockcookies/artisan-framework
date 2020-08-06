@@ -40,6 +40,8 @@ export class ArtisanRedisProvider implements RedisProvider, ProviderLifecycle, N
 
 		const entries = Object.entries(config.clients || {});
 
+		this.logger.info('[redis] clients initialing...', { client_keys: entries.map(([key]) => key) });
+
 		const clients = await Promise.all(
 			entries.map(
 				async ([key, options]): Promise<[string, ArtisanRedis]> => {
