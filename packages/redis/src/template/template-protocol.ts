@@ -1,6 +1,8 @@
 import { RedisClient } from '../redis-protocol';
 import { ValueType, KeyType } from 'ioredis';
 
+export const RedisTemplate = Symbol('Artisan#RedisTemplate');
+
 export interface RedisTemplate {
 	client: RedisClient;
 
