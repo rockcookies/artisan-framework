@@ -48,6 +48,7 @@ export class ArtisanPeonProvider implements PeonProvider {
 				this._exit(code);
 			};
 
+			process.on(signal as any, listener);
 			this._unSubscribeProcessListeners.push(() => process.off(signal, listener));
 		}
 
