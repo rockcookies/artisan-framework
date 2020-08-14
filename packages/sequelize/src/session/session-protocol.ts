@@ -160,7 +160,7 @@ export interface SequelizeSessionManager {
 	): Promise<T>;
 }
 
-export interface SequelizeTransactionManager {
+export interface SequelizeTransactionManager extends SequelizeSessionManager {
 	commit(): Promise<void>;
 	rollback(): Promise<void>;
 	getSequelizeTransaction(): Transaction;
