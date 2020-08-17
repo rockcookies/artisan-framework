@@ -68,7 +68,7 @@ export class Cookies implements WebCookies {
 		// encrypt
 		if (opts.encrypt) {
 			const encrypter = this.getEncrypter();
-			value = value && base64Encode(encrypter.encrypt(value), true);
+			value = value && base64Encode(encrypter.encrypt(value), { urlSafe: true });
 		}
 
 		// http://browsercookielimits.squawky.net/
