@@ -7,13 +7,4 @@ export {
 	EncryptionProvider,
 	EncryptionAlgorithm,
 } from './crypto-protocol';
-export {
-	base64Encode,
-	base64Decode,
-	encryptMd5,
-	encryptSha256,
-	encryptSha1,
-	compareMd5,
-	compareSha256,
-	compareSha1,
-} from './crypto-helper';
+export { base64Encode, base64Decode } from './crypto-helper';
