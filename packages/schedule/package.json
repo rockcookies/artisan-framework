@@ -55,8 +55,8 @@
 		"@artisan-framework/core": "^0.1.19-alpha.0",
 		"@types/humanize-ms": "^1.2.0",
 		"@types/safe-timers": "^1.1.0",
-		"cron-parser": "^2.15.0",
-		"dayjs": "^1.8.32",
+		"cron-parser": "^2.16.3",
+		"dayjs": "^1.8.33",
 		"humanize-ms": "^1.2.1",
 		"safe-timers": "^1.1.0"
 	}
