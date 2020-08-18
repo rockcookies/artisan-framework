@@ -27,6 +27,8 @@ import {
 	TruncateOptions,
 	UpdateOptions,
 	UpsertOptions,
+	IncludeOptions,
+	Sequelize,
 } from 'sequelize';
 import { ArtisanSequelize } from '../artisan-sequelize';
 import { EntityInstance } from '../sequelize-protocol';
@@ -43,7 +45,10 @@ export class ArtisanSequelizeSessionManager implements SequelizeTransactionManag
 	protected _transaction?: Transaction;
 	protected _trace?: TraceContext;
 
+	readonly sequelize: Sequelize;
+
 	constructor(protected _sequelize: ArtisanSequelize, options?: Transactionable & { trace?: TraceContext }) {
+		this.sequelize = _sequelize.instance;
 		this._transaction = options?.transaction;
 		this._trace = options?.trace;
 	}
@@ -281,6 +286,16 @@ export class ArtisanSequelizeSessionManager implements SequelizeTransactionManag
 		} else {
 			throw new ArtisanException(`Entity increment result parse error: ${result}`);
 		}
+	}
+
+	optionInclude<T>(entity: Constructor<any>, field: keyof T, options?: IncludeOptions): IncludeOptions {
+		const model = this._sequelize.getModel(entity);
+
+		return {
+			model,
+			as: field as any,
+			...(options || {}),
+		};
 	}
 
 	async transaction(options: SequelizeTransactionOptions): Promise<SequelizeTransactionManager>;

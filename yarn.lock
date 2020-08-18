@@ -553,10 +553,10 @@
     "@types/yargs" "^15.0.0"
     chalk "^4.0.0"
 
-"@koa/router@^9.1.0":
-  version "9.3.1"
-  resolved "https://registry.npm.taobao.org/@koa/router/download/@koa/router-9.3.1.tgz#814b0f357da616b99ee22259644cd928f2c9e60e"
-  integrity sha1-gUsPNX2mFrme4iJZZEzZKPLJ5g4=
+"@koa/router@^9.4.0":
+  version "9.4.0"
+  resolved "https://registry.npm.taobao.org/@koa/router/download/@koa/router-9.4.0.tgz#734b64c0ae566eb5af752df71e4143edc4748e48"
+  integrity sha1-c0tkwK5WbrWvdS33HkFD7cR0jkg=
   dependencies:
     debug "^4.1.1"
     http-errors "^1.7.3"
@@ -1380,10 +1380,10 @@
     node-mocks-http "^1.5.8"
     tslib "^1.9.3"
 
-"@sindresorhus/is@^3.1.0":
-  version "3.1.0"
-  resolved "https://registry.npm.taobao.org/@sindresorhus/is/download/@sindresorhus/is-3.1.0.tgz?cache=0&sync_timestamp=1595758213105&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2F%40sindresorhus%2Fis%2Fdownload%2F%40sindresorhus%2Fis-3.1.0.tgz#d8735532635bea69ad39119df5f0f10099bd09dc"
-  integrity sha1-2HNVMmNb6mmtORGd9fDxAJm9Cdw=
+"@sindresorhus/is@^3.1.1":
+  version "3.1.1"
+  resolved "https://registry.npm.taobao.org/@sindresorhus/is/download/@sindresorhus/is-3.1.1.tgz#6e39e4222add8b362da35720c9dd5d53345d5851"
+  integrity sha1-bjnkIirdizYto1cgyd1dUzRdWFE=
 
 "@sinonjs/commons@^1.7.0":
   version "1.8.0"
@@ -1749,10 +1749,10 @@
   dependencies:
     "@types/superagent" "*"
 
-"@types/uuid@^8.0.1":
-  version "8.0.1"
-  resolved "https://registry.npm.taobao.org/@types/uuid/download/@types/uuid-8.0.1.tgz?cache=0&sync_timestamp=1596599462764&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2F%40types%2Fuuid%2Fdownload%2F%40types%2Fuuid-8.0.1.tgz#42958a1a880640b139eea97a1640e1a3f61016d2"
-  integrity sha1-QpWKGogGQLE57ql6FkDho/YQFtI=
+"@types/uuid@^8.3.0":
+  version "8.3.0"
+  resolved "https://registry.npm.taobao.org/@types/uuid/download/@types/uuid-8.3.0.tgz?cache=0&sync_timestamp=1597211206941&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2F%40types%2Fuuid%2Fdownload%2F%40types%2Fuuid-8.3.0.tgz#215c231dff736d5ba92410e6d602050cce7e273f"
+  integrity sha1-IVwjHf9zbVupJBDm1gIFDM5+Jz8=
 
 "@types/yargs-parser@*":
   version "15.0.0"
@@ -2866,10 +2866,10 @@ cosmiconfig@^5.1.0:
     js-yaml "^3.13.1"
     parse-json "^4.0.0"
 
-cron-parser@^2.15.0:
-  version "2.15.0"
-  resolved "https://registry.npm.taobao.org/cron-parser/download/cron-parser-2.15.0.tgz#04803cd51d8efcfcc6f83ac08e60f3f8c40c7ec5"
-  integrity sha1-BIA81R2O/PzG+DrAjmDz+MQMfsU=
+cron-parser@^2.16.3:
+  version "2.16.3"
+  resolved "https://registry.npm.taobao.org/cron-parser/download/cron-parser-2.16.3.tgz#acb8e405eed1733aac542fdf604cb7c1daf0204a"
+  integrity sha1-rLjkBe7RczqsVC/fYEy3wdrwIEo=
   dependencies:
     is-nan "^1.3.0"
     moment-timezone "^0.5.31"
@@ -2956,10 +2956,10 @@ dateformat@^3.0.0:
   resolved "https://registry.npm.taobao.org/dateformat/download/dateformat-3.0.3.tgz#a6e37499a4d9a9cf85ef5872044d62901c9889ae"
   integrity sha1-puN0maTZqc+F71hyBE1ikByYia4=
 
-dayjs@^1.8.32:
-  version "1.8.32"
-  resolved "https://registry.npm.taobao.org/dayjs/download/dayjs-1.8.32.tgz?cache=0&sync_timestamp=1596547000240&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Fdayjs%2Fdownload%2Fdayjs-1.8.32.tgz#66c48b95c397d9f7907e89bd29f78b3d19d40294"
-  integrity sha1-ZsSLlcOX2feQfom9KfeLPRnUApQ=
+dayjs@^1.8.33:
+  version "1.8.33"
+  resolved "https://registry.npm.taobao.org/dayjs/download/dayjs-1.8.33.tgz?cache=0&sync_timestamp=1597033940136&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Fdayjs%2Fdownload%2Fdayjs-1.8.33.tgz#18bc4a2b6c1c6f4d67b4c4f2536c0b97e5b766f7"
+  integrity sha1-GLxKK2wcb01ntMTyU2wLl+W3Zvc=
 
 debug@2, debug@^2.2.0, debug@^2.3.3, debug@^2.6.9:
   version "2.6.9"

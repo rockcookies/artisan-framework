@@ -26,6 +26,8 @@ import {
 	TruncateOptions,
 	UpdateOptions,
 	UpsertOptions,
+	Sequelize,
+	IncludeOptions,
 } from 'sequelize';
 import { EntityInstance } from '../sequelize-protocol';
 
@@ -45,6 +47,8 @@ export interface QueryOptionsWithEntity<E> extends Omit<QueryOptionsWithModel<an
 }
 
 export interface SequelizeSessionManager {
+	sequelize: Sequelize;
+
 	query(sql: SequelizeStatement, options: QueryOptionsWithType<QueryTypes.UPDATE>): Promise<[undefined, number]>;
 	query(sql: SequelizeStatement, options: QueryOptionsWithType<QueryTypes.BULKUPDATE>): Promise<number>;
 	query(sql: SequelizeStatement, options: QueryOptionsWithType<QueryTypes.INSERT>): Promise<[number, number]>;
@@ -152,6 +156,8 @@ export interface SequelizeSessionManager {
 		fields: keyof E | Array<keyof E>,
 		_options: IncrementDecrementOptionsWithBy,
 	): Promise<number>;
+
+	optionInclude<T>(entity: Constructor<any>, field: keyof T, options?: IncludeOptions): IncludeOptions;
 
 	transaction(options: SequelizeTransactionOptions): Promise<SequelizeTransactionManager>;
 	transaction<T>(
