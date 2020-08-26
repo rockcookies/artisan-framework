@@ -50,7 +50,9 @@ export function useStatic(
 
 		logger.debug(`[web] starting static serve ${prefix} -> ${options.dir}`);
 
-		middlewares.push(staticCache(staticOptions));
+		const middleware: any = staticCache(staticOptions);
+
+		middlewares.push(middleware);
 	}
 
 	if (middlewares.length <= 0) {

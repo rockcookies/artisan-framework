@@ -36,21 +36,21 @@
 		"prepublishOnly": "npm run clean && npm run compile"
 	},
 	"devDependencies": {
-		"@types/jest": "^26.0.9",
+		"@types/jest": "^26.0.10",
 		"@types/node": "^12.12.50",
-		"@typescript-eslint/eslint-plugin": "^3.8.0",
-		"@typescript-eslint/parser": "^3.8.0",
-		"eslint": "^7.6.0",
+		"@typescript-eslint/eslint-plugin": "^3.10.1",
+		"@typescript-eslint/parser": "^3.10.1",
+		"eslint": "^7.7.0",
 		"eslint-config-prettier": "^6.11.0",
 		"eslint-plugin-prettier": "^3.1.4",
-		"jest": "^26.2.2",
+		"jest": "^26.4.2",
 		"lerna": "^3.22.1",
-		"prettier": "^2.0.5",
+		"prettier": "^2.1.0",
 		"rimraf": "^3.0.2",
 		"strip-json-comments": "^3.1.1",
-		"ts-jest": "^26.1.4",
-		"ts-node": "^8.10.2",
-		"typescript": "^3.9.7"
+		"ts-jest": "^26.2.0",
+		"ts-node": "^9.0.0",
+		"typescript": "^4.0.2"
 	},
 	"gitHead": "2e1d7006c7e770e5b2e2dc559aeeeaa3cae5fd6f",
 	"dependencies": {
