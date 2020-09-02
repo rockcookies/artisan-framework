@@ -164,6 +164,11 @@ export class ArtisanSequelize {
 				});
 			}
 		}
+
+		// 设置关联
+		for (const associate of associations) {
+			associate();
+		}
 	}
 
 	protected associate(entity: Constructor<any>, model: ModelCtor<any>, association: EntityAssociationOptions) {
