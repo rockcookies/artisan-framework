@@ -39,8 +39,6 @@ import {
 	SequelizeTransactionOptions,
 } from './session-protocol';
 
-// TODO include
-
 export class ArtisanSequelizeSessionManager implements SequelizeTransactionManager {
 	protected _transaction?: Transaction;
 	protected _trace?: TraceContext;
@@ -320,11 +318,17 @@ export class ArtisanSequelizeSessionManager implements SequelizeTransactionManag
 
 		if (!autoCallback) {
 			const trx = await this._sequelize.instance.transaction(sequelizeTransaction);
-			return new ArtisanSequelizeSessionManager(this._sequelize, { transaction: trx, trace });
+			return new ArtisanSequelizeSessionManager(this._sequelize, {
+				transaction: trx,
+				trace: trace || this._trace,
+			});
 		}
 
 		return this._sequelize.instance.transaction(sequelizeTransaction, async (trx) => {
-			const stm = new ArtisanSequelizeSessionManager(this._sequelize, { transaction: trx, trace });
+			const stm = new ArtisanSequelizeSessionManager(this._sequelize, {
+				transaction: trx,
+				trace: trace || this._trace,
+			});
 			return autoCallback(stm);
 		});
 	}
