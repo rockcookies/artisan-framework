@@ -302,9 +302,13 @@ export class ArtisanSequelizeSessionManager implements SequelizeTransactionManag
 		autoCallback: (tx: SequelizeTransactionManager) => PromiseLike<T>,
 	): Promise<T>;
 	async transaction(options: SequelizeTransactionOptions, autoCallback?: any): Promise<any> {
-		const { transaction, trace, ...restOptions } = options;
+		const { transaction, trace: _trace, ...restOptions } = options;
+		const trace = _trace || this._trace;
 
-		const sequelizeTransaction: TransactionOptions = { ...restOptions };
+		const sequelizeTransaction: TransactionOptions = {
+			...restOptions,
+			...this._sequelize.createLogging({ trace }),
+		};
 
 		if (transaction) {
 			let trx: any = transaction;
@@ -320,14 +324,14 @@ export class ArtisanSequelizeSessionManager implements SequelizeTransactionManag
 			const trx = await this._sequelize.instance.transaction(sequelizeTransaction);
 			return new ArtisanSequelizeSessionManager(this._sequelize, {
 				transaction: trx,
-				trace: trace || this._trace,
+				trace: trace,
 			});
 		}
 
 		return this._sequelize.instance.transaction(sequelizeTransaction, async (trx) => {
 			const stm = new ArtisanSequelizeSessionManager(this._sequelize, {
 				transaction: trx,
-				trace: trace || this._trace,
+				trace: trace,
 			});
 			return autoCallback(stm);
 		});
