@@ -55,7 +55,7 @@ export class ArtisanFactoryStatic {
 				}
 			};
 
-			signals.forEach((signal) => {
+			signals.forEach((signal: any) => {
 				const cb = () => cleanup(signal);
 				process.on(signal, cb);
 				this._shutdownCleanupRefs.push(() => {
