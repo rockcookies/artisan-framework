@@ -1,56 +1,75 @@
-import { AbstractConfigProvider, ConfigProvider, globalContainer } from '@artisan-framework/core';
 import {
-	EncryptionAlgorithm,
-	EncryptionProviderConfig,
-	EncryptionProvider,
-	ArtisanEncryptionProvider,
-} from '@artisan-framework/crypto';
-import { ArtisanWebProvider, WebProvider, WebProviderConfig, WebInitializationProvider } from '../src';
+	AbstractConfigHolder,
+	ApplicationContext,
+	ArtisanApplicationContext,
+	ConfigHolder,
+	NoopLoggerProvider,
+} from '@artisan-framework/core';
+import { EncryptionAlgorithm, EncryptionProviderConfig } from '@artisan-framework/crypto';
+import { ArtisanWebProvider, WebInitializationProvider, WebProvider, WebProviderConfig } from '../src';
 
 const algFoo: EncryptionAlgorithm = { key: 'b934174808e19adf0c98d5acca1b8e9f', iv: 'c64283fecba3b901' };
 const algBar: EncryptionAlgorithm = { key: '7e159a579c2887c61df1339c8fe80c93', iv: 'f4d0d64b3208ff79' };
 
-export async function getWebProvider(
-	config: WebProviderConfig & { algorithms?: EncryptionAlgorithm[] | false },
-	initializer?: (webProvider: WebProvider) => Promise<void>,
-): Promise<ArtisanWebProvider> {
-	const container = globalContainer.clone();
+interface Options extends WebProviderConfig {
+	algorithms?: EncryptionAlgorithm[] | false;
+}
 
-	const { algorithms, ...webConfig } = config || {};
+export function createWebProviderFactory(): {
+	getWebProvider: (o: Options, initializer?: (w: WebProvider) => Promise<void>) => Promise<ArtisanWebProvider>;
+	clean: () => Promise<void>;
+} {
+	const contexts: ApplicationContext[] = [];
 
-	const encryptionConfig: EncryptionProviderConfig | undefined =
-		algorithms === false ? undefined : { algorithms: algorithms || [algFoo, algBar] };
+	return {
+		getWebProvider: async (config, initializer) => {
+			const context = new ArtisanApplicationContext({ logger: new NoopLoggerProvider() });
 
-	container.registerClass(
-		ConfigProvider,
-		class CP extends AbstractConfigProvider {
-			config() {
-				return {
-					artisan: {
-						web: webConfig,
-						encryption: encryptionConfig,
-					},
-				};
-			}
+			const { algorithms, ..._webConfig } = config || {};
+
+			const webConfig: WebProviderConfig = {
+				..._webConfig,
+				server: {
+					..._webConfig.server,
+					manual: true,
+				},
+			};
+
+			const encryptionConfig: EncryptionProviderConfig | undefined =
+				algorithms === false ? undefined : { algorithms: algorithms || [algFoo, algBar] };
+
+			context.container.registerClass(
+				ConfigHolder,
+				class CP extends AbstractConfigHolder {
+					config() {
+						return {
+							artisan: {
+								web: webConfig,
+								encryption: encryptionConfig,
+							},
+						};
+					}
+				},
+			);
+
+			context.container.registerConstant(WebInitializationProvider, {
+				initWebProvider: async (web) => {
+					if (initializer) {
+						await initializer(web);
+					}
+				},
+			} as WebInitializationProvider);
+
+			context.useProvider(ArtisanWebProvider);
+
+			await context.init();
+
+			contexts.push(context);
+
+			return context.container.resolve(WebProvider);
 		},
-	);
-
-	container.registerClass(
-		WebInitializationProvider,
-		class WIP implements WebInitializationProvider {
-			async initWebProvider(webProvider: WebProvider): Promise<void> {
-				if (initializer != null) {
-					await initializer(webProvider);
-				}
-			}
+		clean: async () => {
+			await Promise.all(contexts.map((c) => c.close()));
 		},
-	);
-
-	const encryption = container.resolve<ArtisanEncryptionProvider>(EncryptionProvider);
-
-	await encryption.start();
-
-	const provider = container.resolve<ArtisanWebProvider>(WebProvider);
-	await provider.setup();
-	return provider;
+	};
 }

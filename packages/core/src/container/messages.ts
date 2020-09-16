@@ -21,3 +21,6 @@ export const DEPENDENCY_TOKEN_UNRESOLVED = (target: any, propertyKey: string, pa
 };
 
 export const LAZY_UNDEFINED = 'Attempt to `lazy` undefined. Constructor must be wrapped in a callback';
+
+// TODO 测试
+export const CANT_REGISTER_DEPENDENCY_CONTAINER_TOKEN = 'Can`t register `DependencyContainer` token.';

@@ -1,23 +1,19 @@
 import is from '@sindresorhus/is';
 import { Constructor } from '../interfaces';
-import { ArtisanContainerProvider } from './artisan-container-provider';
+import { ArtisanDependencyContainer } from './artisan-dependency-container';
 import { AdvisorRegistry, ClassRegistry, MethodInvokeContext } from './container-protocol';
 import { AdvisorMethodOptions } from './decorators/advice';
 
 export class AdvisorManager {
 	private _advisedInstances = new Map<any, any>();
 
-	constructor(private container: ArtisanContainerProvider) {}
+	constructor(private container: ArtisanDependencyContainer) {}
 
 	clear() {
 		this._advisedInstances.clear();
 	}
 
-	clone(container: ArtisanContainerProvider) {
-		return new AdvisorManager(container);
-	}
-
-	adviseClass(instance: any, reg: ClassRegistry, containerProvider: ArtisanContainerProvider): any {
+	adviseClass(instance: any, reg: ClassRegistry, containerProvider: ArtisanDependencyContainer): any {
 		if (this._advisedInstances.has(instance)) {
 			return this._advisedInstances.get(instance);
 		}
@@ -99,14 +95,6 @@ export class AdvisorManager {
 				result.push([reg, this.container._resolveRegistry(reg, ctx)]);
 			}
 		}
-
-		// 排序
-		result.sort(([, a], [, b]) => {
-			const oA = typeof a.order === 'function' ? a.order() : 0;
-			const oB = typeof b.order === 'function' ? b.order() : 0;
-
-			return oA - oB;
-		});
 
 		return result;
 	}

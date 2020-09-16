@@ -1,13 +1,17 @@
-import { autowired, autowiredAll, InjectableScope, lazy, DependencyContainer, postConstruct } from '../src';
-import { ArtisanContainerProvider } from '../src/container/artisan-container-provider';
-import { DUPLICATED_PARAMETER_METADATA, NOT_REGISTERED } from '../src/container/error-messages';
+import { autowired, autowiredAll, DependencyContainer, InjectableScope, lazy, postConstruct } from '../src';
+import { ArtisanDependencyContainer } from '../src/container/artisan-dependency-container';
+import {
+	CANT_REGISTER_DEPENDENCY_CONTAINER_TOKEN,
+	DUPLICATED_PARAMETER_METADATA,
+	NOT_REGISTERED,
+} from '../src/container/messages';
 
 interface IBar {
 	value: string;
 }
 
 describe('artisan-container-provider.test.ts', () => {
-	const container = new ArtisanContainerProvider();
+	const container = new ArtisanDependencyContainer();
 
 	beforeEach(() => {
 		container.reset();
@@ -364,17 +368,6 @@ describe('artisan-container-provider.test.ts', () => {
 		expect(c.b !== b).toBeTruthy();
 	});
 
-	it('test clone', () => {
-		const newContainer = container.clone();
-
-		const cA = container.resolve(DependencyContainer);
-		const cB = newContainer.resolve(DependencyContainer);
-
-		expect(newContainer !== container).toBeTruthy();
-		expect(cA === container).toBeTruthy();
-		expect(cB === newContainer).toBeTruthy();
-	});
-
 	it('test @postConstruct', () => {
 		const initFn = jest.fn();
 
@@ -389,5 +382,11 @@ describe('artisan-container-provider.test.ts', () => {
 		container.resolve(A);
 
 		expect(initFn).toBeCalled();
+	});
+
+	it('test register DependencyContainer token', () => {
+		expect(() => {
+			container.registerConstant(DependencyContainer, container);
+		}).toThrow(CANT_REGISTER_DEPENDENCY_CONTAINER_TOKEN);
 	});
 });

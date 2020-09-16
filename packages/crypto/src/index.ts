@@ -1,8 +1,7 @@
-import './init';
 export { ArtisanEncryptionProvider } from './artisan-encryption-provider';
 export {
 	ENCRYPTION_PROVIDER_CONFIG_KEY,
-	ENCRYPTION_PROVIDER_ORDER,
+	ENCRYPTION_PROVIDER_INIT_ORDER,
 	EncryptionProviderConfig,
 	EncryptionProvider,
 	EncryptionAlgorithm,

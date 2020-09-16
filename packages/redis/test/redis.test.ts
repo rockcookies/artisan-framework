@@ -1,25 +1,26 @@
-import { sleep } from '@artisan-framework/core';
-import { ArtisanRedisProvider, RedisTemplate } from '../src';
-import { getRedisProvider } from './utils';
+import { ApplicationContext, sleep } from '@artisan-framework/core';
+import { ArtisanRedisProvider, RedisProvider, RedisTemplate } from '../src';
+import { getRedisContext } from './utils';
 
 describe('redis.test.ts', () => {
+	let context: ApplicationContext;
 	let redisProvider: ArtisanRedisProvider;
 	let template: RedisTemplate;
 
 	beforeAll(async () => {
-		redisProvider = await getRedisProvider();
+		context = await getRedisContext();
+		await context.init();
 
-		await redisProvider.start();
-
+		redisProvider = context.container.resolve(RedisProvider);
 		template = redisProvider.createTemplate();
-	});
-
-	afterAll(async () => {
-		await redisProvider.stop();
 	});
 
 	afterEach(async () => {
 		await template.flush();
+	});
+
+	afterAll(async () => {
+		await context.close();
 	});
 
 	it('test setNx', async () => {

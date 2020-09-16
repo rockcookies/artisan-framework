@@ -2,15 +2,14 @@ import {
 	afterAsyncMethodReturning,
 	afterAsyncMethodThrows,
 	afterSyncMethodReturning,
-	ArtisanContainerProvider,
+	afterSyncMethodThrows,
+	ArtisanDependencyContainer,
 	beforeMethod,
 	MethodInvokeContext,
-	Ordered,
-	afterSyncMethodThrows,
 } from '../src';
 
 describe('advisor', () => {
-	const container = new ArtisanContainerProvider();
+	const container = new ArtisanDependencyContainer();
 
 	const sleep = (time: number): Promise<void> =>
 		new Promise((resolve) => {
@@ -223,42 +222,5 @@ describe('advisor', () => {
 		expect(asyncThrowException).toBe('async-throw');
 		expect(asyncRejectContext.exception).toBe('reject');
 		expect(asyncThrowContext.exception).toBe('async-throw');
-	});
-
-	it('test order', () => {
-		const result: string[] = [];
-
-		class AdviceA implements Ordered {
-			order() {
-				return 2;
-			}
-
-			@beforeMethod()
-			before() {
-				result.push('a');
-			}
-		}
-
-		class AdviceB implements Ordered {
-			order() {
-				return 1;
-			}
-
-			@beforeMethod()
-			before() {
-				result.push('b');
-			}
-		}
-
-		container.registerAdvisor(AdviceA);
-		container.registerAdvisor(AdviceB);
-
-		const target = container.resolve(Target);
-
-		target.bar();
-
-		expect(result.length).toBe(2);
-		expect(result[0]).toBe('b');
-		expect(result[1]).toBe('a');
 	});
 });

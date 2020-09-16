@@ -1,9 +1,19 @@
-import { getWebProvider } from './utils';
+import { createWebProviderFactory } from './utils';
 import request = require('supertest');
 
 describe('trace.test.ts', () => {
+	let factory: ReturnType<typeof createWebProviderFactory>;
+
+	beforeEach(() => {
+		factory = createWebProviderFactory();
+	});
+
+	afterEach(async () => {
+		await factory.clean();
+	});
+
 	it('should trace work', async () => {
-		const webProvider = await getWebProvider({}, async (web) => {
+		const webProvider = await factory.getWebProvider({}, async (web) => {
 			web.router.get('/', (ctx, next) => {
 				ctx.body = 'ok';
 				return next();

@@ -22,13 +22,13 @@ export {
 	LazyConstructor,
 	formatInjectionToken,
 } from './decorators/object';
-export { AbstractConfigProvider } from './abstract-config-provider';
+export { AbstractConfigHolder } from './abstract-config-holder';
 export {
-	ConfigProvider,
+	ConfigHolder,
 	DependencyContainer,
 	ObjectFactory,
 	InjectionToken,
 	InjectableScope,
 	MethodInvokeContext,
 } from './container-protocol';
-export { ArtisanContainerProvider, globalContainer } from './artisan-container-provider';
+export { ArtisanDependencyContainer } from './artisan-dependency-container';

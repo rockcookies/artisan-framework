@@ -1,5 +1,11 @@
-import { AbstractConfigProvider, ConfigProvider, Dictionary, globalContainer } from '@artisan-framework/core';
-import { EncryptionAlgorithm, EncryptionProvider, ArtisanEncryptionProvider } from '@artisan-framework/crypto';
+import {
+	AbstractConfigHolder,
+	ArtisanApplicationContext,
+	ConfigHolder,
+	Dictionary,
+	NoopLoggerProvider,
+} from '@artisan-framework/core';
+import { ArtisanEncryptionProvider, EncryptionAlgorithm, EncryptionProvider } from '@artisan-framework/crypto';
 import { createMockContext, Options } from '@shopify/jest-koa-mocks';
 import { Cookies, WebCookiesSetOptions } from '../src/cookies';
 import crypto = require('crypto');
@@ -16,11 +22,13 @@ describe('cookies.test.ts', () => {
 		{ algorithms, ...options }: WebCookiesSetOptions & { algorithms?: EncryptionAlgorithm[] | false },
 		opts?: Options<Dictionary>,
 	): Promise<Cookies> => {
-		const container = globalContainer.clone();
+		const context = new ArtisanApplicationContext({ logger: new NoopLoggerProvider() });
 
-		container.registerClass(
-			ConfigProvider,
-			class CP extends AbstractConfigProvider {
+		context.useProvider(ArtisanEncryptionProvider);
+
+		context.container.registerClass(
+			ConfigHolder,
+			class CP extends AbstractConfigHolder {
 				config() {
 					return {
 						artisan: {
@@ -31,9 +39,9 @@ describe('cookies.test.ts', () => {
 			},
 		);
 
-		const encryption = container.resolve<ArtisanEncryptionProvider>(EncryptionProvider);
+		await context.init();
 
-		await encryption.start();
+		const encryption = context.container.resolve<EncryptionProvider>(EncryptionProvider);
 
 		const ctx = createMockContext({
 			url: options.secure ? 'https://abc.com' : 'http://abc.com',

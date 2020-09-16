@@ -1,16 +1,31 @@
 import urllib = require('urllib');
 import Agent = require('agentkeepalive');
-import { autowired, LoggerProvider, ProviderLifecycle, Namable, value, Ordered } from '@artisan-framework/core';
+import {
+	autowired,
+	LoggerProvider,
+	Namable,
+	OnProviderDestroy,
+	OnProviderInit,
+	provider,
+	ProviderInitOrder,
+	value,
+} from '@artisan-framework/core';
 import { URL } from 'url';
 import {
 	HttpClientProvider,
 	HttpClientProviderConfig,
 	HttpRequestOptions,
 	HTTP_CLIENT_PROVIDER_CONFIG_KEY,
-	HTTP_CLIENT_PROVIDER_ORDER,
+	HTTP_CLIENT_PROVIDER_INIT_ORDER,
 } from './http-client-protocol';
 
-export class ArtisanHttpClientProvider implements HttpClientProvider, ProviderLifecycle, Namable, Ordered {
+@provider({
+	register: ({ container }) => {
+		container.registerClass(HttpClientProvider, ArtisanHttpClientProvider);
+	},
+})
+export class ArtisanHttpClientProvider
+	implements HttpClientProvider, OnProviderInit, OnProviderDestroy, ProviderInitOrder, Namable {
 	@autowired(LoggerProvider)
 	_logger: LoggerProvider;
 
@@ -23,11 +38,11 @@ export class ArtisanHttpClientProvider implements HttpClientProvider, ProviderLi
 		return 'artisan-http-client';
 	}
 
-	order(): number {
-		return HTTP_CLIENT_PROVIDER_ORDER;
+	providerInitOrder(): number {
+		return HTTP_CLIENT_PROVIDER_INIT_ORDER;
 	}
 
-	async start(): Promise<void> {
+	async onProviderInit(): Promise<void> {
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		const { httpAgent = true, httpsAgent = true, sendTrace: _sendTrace, ...restOptions } = this._config || {};
 
@@ -57,14 +72,15 @@ export class ArtisanHttpClientProvider implements HttpClientProvider, ProviderLi
 			});
 		}
 
+		this._logger.debug('[http-client] initializing...', { options });
+
 		this._client = urllib.create(options);
 
-		this._logger.debug('[http-client] initialized default options', options);
-		this._logger.info('[http-client] created');
+		this._logger.info('[http-client] initialized');
 	}
 
-	async stop(): Promise<void> {
-		this._logger.info('[http-client] closed');
+	async onProviderDestroy(): Promise<void> {
+		this._logger.info('[http-client] destroyed');
 	}
 
 	async request<T = any>(url: string | URL, _options?: HttpRequestOptions): Promise<urllib.HttpClientResponse<T>> {

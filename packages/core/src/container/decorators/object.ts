@@ -9,7 +9,7 @@ import {
 } from '../container-protocol';
 import { Constructor, Dictionary } from '../../interfaces';
 import { ArtisanException } from '../../error';
-import { DEPENDENCY_TOKEN_UNRESOLVED, DUPLICATED_PARAMETER_METADATA, LAZY_UNDEFINED } from '../error-messages';
+import { DEPENDENCY_TOKEN_UNRESOLVED, DUPLICATED_PARAMETER_METADATA, LAZY_UNDEFINED } from '../messages';
 import { attachMetadataProps } from '../../utils/reflect-helper';
 
 export interface ValueOptions {

@@ -1,11 +1,12 @@
 import { ArtisanException } from '../error';
 import { Constructor } from '../interfaces';
+import { randomString } from '../utils/core-helper';
 import { AdvisorManager } from './advisor-manager';
 import {
 	AdvisorRegistry,
 	ClassRegistrationOptions,
 	ClassRegistry,
-	ConfigProvider,
+	ConfigHolder,
 	DependencyContainer,
 	InjectableScope,
 	InjectionToken,
@@ -15,21 +16,23 @@ import {
 	TaggedMetadata,
 } from './container-protocol';
 import { LazyConstructor } from './decorators/object';
-import { NOT_REGISTERED } from './error-messages';
+import { NOT_REGISTERED } from './messages';
 import { Registry } from './registry';
 
 interface ResolutionContext {
 	dependencies: Map<Constructor<any>, any>;
 }
 
-export class ArtisanContainerProvider implements DependencyContainer {
+export class ArtisanDependencyContainer implements DependencyContainer {
+	id = `container-${randomString(8)}`;
+
 	_registry: Registry;
 	_advisorManager: AdvisorManager;
 
 	_singletonCache = new Map<Constructor<any>, any>();
 	_dynamicCache = new Map<(c: DependencyContainer) => any, any>();
 
-	constructor(public parent?: ArtisanContainerProvider) {
+	constructor(public parent?: ArtisanDependencyContainer) {
 		this._registry = new Registry(this);
 		this._advisorManager = new AdvisorManager(this);
 	}
@@ -38,7 +41,7 @@ export class ArtisanContainerProvider implements DependencyContainer {
 		token: InjectionToken<T>,
 		clz: Constructor<T>,
 		options?: ClassRegistrationOptions,
-	): ArtisanContainerProvider {
+	): ArtisanDependencyContainer {
 		this._registry.registerClass(token, clz, options);
 		return this;
 	}
@@ -46,12 +49,12 @@ export class ArtisanContainerProvider implements DependencyContainer {
 	registerFactory<T extends ObjectFactory>(
 		token: InjectionToken<T>,
 		factory: (dependencyContainer: DependencyContainer) => T,
-	): ArtisanContainerProvider {
+	): ArtisanDependencyContainer {
 		this._registry.registerFactory(token, factory);
 		return this;
 	}
 
-	registerConstant<T>(token: InjectionToken, constant: T): ArtisanContainerProvider {
+	registerConstant<T>(token: InjectionToken, constant: T): ArtisanDependencyContainer {
 		this._registry.registerConstant(token, constant);
 		return this;
 	}
@@ -59,12 +62,12 @@ export class ArtisanContainerProvider implements DependencyContainer {
 	registerDynamic<T>(
 		token: InjectionToken,
 		dynamic: (dependencyContainer: DependencyContainer) => T,
-	): ArtisanContainerProvider {
+	): ArtisanDependencyContainer {
 		this._registry.registerDynamic(token, dynamic);
 		return this;
 	}
 
-	registerAdvisor<T>(clz: Constructor<T>): ArtisanContainerProvider {
+	registerAdvisor<T>(clz: Constructor<T>): ArtisanDependencyContainer {
 		this._registry.registerAdvisor(clz);
 		return this;
 	}
@@ -88,17 +91,8 @@ export class ArtisanContainerProvider implements DependencyContainer {
 		this._registry.clear();
 	}
 
-	clone(): ArtisanContainerProvider {
-		const newContainer = new ArtisanContainerProvider(this.parent);
-
-		newContainer._registry = this._registry.clone(newContainer);
-		newContainer._advisorManager = this._advisorManager.clone(newContainer);
-
-		return newContainer;
-	}
-
-	createChildContainer(): ArtisanContainerProvider {
-		return new ArtisanContainerProvider(this);
+	createChildContainer(): ArtisanDependencyContainer {
+		return new ArtisanDependencyContainer(this);
 	}
 
 	resolve<T>(token: InjectionToken<T>): T {
@@ -122,11 +116,7 @@ export class ArtisanContainerProvider implements DependencyContainer {
 		ctx: ResolutionContext = { dependencies: new Map<Constructor<any>, any>() },
 	): any {
 		const token = meta.token instanceof LazyConstructor ? meta.token.unwrap() : meta.token;
-		const registries = meta.isArray ? this._registry.getAll(token) : this._registry.get(token);
-
-		if (!registries && this.parent?.isRegistered(token, true)) {
-			return meta.isArray ? this.parent.resolveAll(token) : this.parent.resolve(token);
-		}
+		const registries = meta.isArray ? this._getAllRegistration(token) : this._getRegistration(token);
 
 		if (!registries && meta.optional) {
 			return;
@@ -192,14 +182,13 @@ export class ArtisanContainerProvider implements DependencyContainer {
 			if (meta.type === 'value') {
 				const provider = this._resolve(
 					{
-						token: ConfigProvider,
+						token: ConfigHolder,
 						optional: true,
 						isArray: false,
 					},
 					ctx,
 				);
 
-				// TODO 友好提示
 				return provider ? provider['get'](meta.el, meta.default) : meta.default;
 			} else {
 				return this._resolve(meta, ctx);
@@ -240,6 +229,24 @@ export class ArtisanContainerProvider implements DependencyContainer {
 
 		return instance;
 	}
-}
 
-export const globalContainer: DependencyContainer = new ArtisanContainerProvider();
+	private _getRegistration(token: InjectionToken): ServiceRegistry | undefined {
+		if (this.isRegistered(token)) {
+			return this._registry.get(token);
+		}
+
+		if (this.parent) {
+			return this.parent._getRegistration(token);
+		}
+	}
+
+	private _getAllRegistration(token: InjectionToken): ServiceRegistry[] | undefined {
+		if (this.isRegistered(token)) {
+			return this._registry.getAll(token);
+		}
+
+		if (this.parent) {
+			return this.parent._getAllRegistration(token);
+		}
+	}
+}

@@ -1,4 +1,3 @@
-import './init';
 export {
 	EntityBelongsToManyOptions,
 	EntityHasOneOptions,
@@ -19,7 +18,7 @@ export { FieldUniqueValidator } from './field-unique-validator';
 export {
 	SequelizeProvider,
 	SEQUELIZE_PROVIDER_CONFIG_KEY,
-	SEQUELIZE_PROVIDER_ORDER,
+	SEQUELIZE_PROVIDER_INIT_ORDER,
 	EntityInstance,
 	SequelizeOptions,
 	SequelizeProviderConfig,

@@ -1,11 +1,11 @@
 import { ArtisanException } from '../error';
 import { Constructor, Dictionary } from '../interfaces';
 import { recursiveGetMetadata } from '../utils/reflect-helper';
-import { ArtisanContainerProvider } from './artisan-container-provider';
+import { ArtisanDependencyContainer } from './artisan-dependency-container';
 import {
 	AdvisorRegistry,
 	ClassRegistrationOptions,
-	ConfigProvider,
+	ConfigHolder,
 	DependencyContainer,
 	InjectableScope,
 	InjectionToken,
@@ -14,28 +14,31 @@ import {
 	TaggedMetadata,
 	TAGGED_ADVISOR_PROPERTY,
 	TAGGED_PARAMETER,
-	TAGGED_PROPERTY,
 	TAGGED_POST_CONSTRUCT,
+	TAGGED_PROPERTY,
 } from './container-protocol';
 import { LazyConstructor } from './decorators/object';
-import { CIRCULAR_PARAMETER_DEPENDENCY } from './error-messages';
+import { CANT_REGISTER_DEPENDENCY_CONTAINER_TOKEN, CIRCULAR_PARAMETER_DEPENDENCY } from './messages';
 
 const AdvisorToken = Symbol('Artisan#Advisor');
 
 export class Registry {
 	private _registries: Map<InjectionToken, ServiceRegistry[]>;
-	private _containerRegistries: ServiceRegistry[];
 
-	constructor(container: ArtisanContainerProvider) {
-		this._registries = new Map<InjectionToken, ServiceRegistry[]>();
-
-		this._containerRegistries = [
-			{
-				type: 'constant',
-				token: DependencyContainer,
-				constant: container,
-			},
-		];
+	constructor(container: ArtisanDependencyContainer) {
+		// 默认注册依赖容器
+		this._registries = new Map<InjectionToken, ServiceRegistry[]>([
+			[
+				DependencyContainer,
+				[
+					{
+						type: 'constant',
+						token: DependencyContainer,
+						constant: container,
+					},
+				],
+			],
+		]);
 	}
 
 	/** 注册类 */
@@ -132,10 +135,6 @@ export class Registry {
 	}
 
 	getAll(token: InjectionToken): ServiceRegistry[] | undefined {
-		if (token === DependencyContainer) {
-			return this._containerRegistries;
-		}
-
 		return this._registries.get(token);
 	}
 
@@ -145,16 +144,6 @@ export class Registry {
 
 	clear() {
 		this._registries.clear();
-	}
-
-	clone(container: ArtisanContainerProvider): Registry {
-		const registry = new Registry(container);
-
-		for (const [token, registries] of this._registries) {
-			registry._registries.set(token, [...registries]);
-		}
-
-		return registry;
 	}
 
 	private _resolvePostConstructMethod(clz: Constructor<any>): string | undefined {
@@ -193,6 +182,10 @@ export class Registry {
 	}
 
 	private _put(token: InjectionToken, registry: ServiceRegistry): this {
+		if (token === DependencyContainer) {
+			throw new ArtisanException(CANT_REGISTER_DEPENDENCY_CONTAINER_TOKEN);
+		}
+
 		const registries = this._registries.get(token);
 
 		if (!registries) {
@@ -206,7 +199,7 @@ export class Registry {
 
 	private _getDependencyToken(meta: TaggedMetadata): InjectionToken {
 		if (meta.type === 'value') {
-			return ConfigProvider;
+			return ConfigHolder;
 		} else if (meta.token instanceof LazyConstructor) {
 			return meta.token.unwrap();
 		} else {

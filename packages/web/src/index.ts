@@ -1,4 +1,3 @@
-import './init';
 export * from './cookies';
 export * from './session';
 export * from './trace';
@@ -8,7 +7,7 @@ export {
 	WebProvider,
 	WebInitializationProvider,
 	WEB_PROVIDER_CONFIG_KEY,
-	WEB_PROVIDER_ORDER,
+	WEB_PROVIDER_INIT_ORDER,
 	WebServerOptions,
 	WebProviderConfig,
 	WebContext,

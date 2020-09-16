@@ -1,6 +1,7 @@
-import { getSequelizeProvider } from './utils';
+import { ApplicationContext } from '@artisan-framework/core';
 import { INTEGER, STRING } from 'sequelize';
-import { SequelizeSessionManager, table, column, ArtisanSequelizeProvider } from '../src';
+import { ArtisanSequelizeProvider, column, SequelizeProvider, SequelizeSessionManager, table } from '../src';
+import { getSequelizeContext } from './utils';
 
 @table({
 	tableName: 'ats_test_table',
@@ -34,19 +35,20 @@ class TestEntity {
 }
 
 describe('sequelize-session-manager.test.ts', () => {
+	let context: ApplicationContext;
+	let sequelizeProvider: ArtisanSequelizeProvider;
 	let session: SequelizeSessionManager;
-	let provider: ArtisanSequelizeProvider;
 
 	beforeAll(async () => {
-		provider = await getSequelizeProvider({
+		context = await getSequelizeContext({
 			entities: { test: TestEntity },
 		});
+		await context.init();
 
-		await provider.start();
+		sequelizeProvider = context.container.resolve(SequelizeProvider);
+		session = sequelizeProvider.createSessionManager();
 
-		session = provider.createSessionManager();
-
-		await provider
+		await sequelizeProvider
 			.getSequelize()
 			.getQueryInterface()
 			.createTable('ats_test_table', {
@@ -65,13 +67,13 @@ describe('sequelize-session-manager.test.ts', () => {
 			});
 	});
 
-	beforeEach(async () => {
+	afterEach(async () => {
 		await session.truncate(TestEntity);
 	});
 
 	afterAll(async () => {
-		await provider.getSequelize().getQueryInterface().dropTable('ats_test_table');
-		await provider.stop();
+		await sequelizeProvider.getSequelize().getQueryInterface().dropTable('ats_test_table');
+		await context.close();
 	});
 
 	it('test findAll', async () => {

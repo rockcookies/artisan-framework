@@ -3,8 +3,10 @@ import {
 	autowired,
 	LoggerProvider,
 	Namable,
-	Ordered,
-	ProviderLifecycle,
+	OnProviderDestroy,
+	OnProviderInit,
+	provider,
+	ProviderInitOrder,
 	TraceContext,
 	value,
 } from '@artisan-framework/core';
@@ -14,13 +16,19 @@ import {
 	SequelizeProvider,
 	SequelizeProviderConfig,
 	SEQUELIZE_PROVIDER_CONFIG_KEY,
-	SEQUELIZE_PROVIDER_ORDER,
+	SEQUELIZE_PROVIDER_INIT_ORDER,
 } from './sequelize-protocol';
 import { ArtisanSequelizeSessionManager, SequelizeSessionManager } from './session';
 
-export class ArtisanSequelizeProvider implements SequelizeProvider, ProviderLifecycle, Namable, Ordered {
+@provider({
+	register: ({ container }) => {
+		container.registerClass(SequelizeProvider, ArtisanSequelizeProvider);
+	},
+})
+export class ArtisanSequelizeProvider
+	implements SequelizeProvider, OnProviderInit, OnProviderDestroy, ProviderInitOrder, Namable {
 	@autowired(LoggerProvider)
-	public logger: LoggerProvider;
+	logger: LoggerProvider;
 
 	@value(SEQUELIZE_PROVIDER_CONFIG_KEY)
 	private _config?: SequelizeProviderConfig;
@@ -31,16 +39,16 @@ export class ArtisanSequelizeProvider implements SequelizeProvider, ProviderLife
 		return 'artisan-sequelize';
 	}
 
-	order(): number {
-		return SEQUELIZE_PROVIDER_ORDER;
+	providerInitOrder(): number {
+		return SEQUELIZE_PROVIDER_INIT_ORDER;
 	}
 
-	async start(): Promise<void> {
+	async onProviderInit(): Promise<void> {
 		const config = this._config || {};
 
 		const entries = Object.entries(config.datasources || {});
 
-		this.logger.info('[sequelize] datasources initialing...', { datasource_keys: entries.map(([key]) => key) });
+		this.logger.info('[sequelize] initialing...', { datasource_keys: entries.map(([key]) => key) });
 
 		const datasources = entries.map(([key, options]): [string, ArtisanSequelize] => {
 			const db = new ArtisanSequelize({
@@ -62,10 +70,14 @@ export class ArtisanSequelizeProvider implements SequelizeProvider, ProviderLife
 		for (const [key, db] of datasources) {
 			this._databases.set(key, db);
 		}
+
+		this.logger.info('[sequelize] initialized');
 	}
 
-	async stop(): Promise<void> {
+	async onProviderDestroy(): Promise<void> {
+		this.logger.info('[sequelize] destroying...');
 		await Promise.all([...this._databases.values()].map((db) => db.close()));
+		this.logger.info('[sequelize] destroyed');
 	}
 
 	getSequelize(datasource?: string): Sequelize {

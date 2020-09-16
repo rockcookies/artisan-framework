@@ -1,6 +1,6 @@
 import { sleep } from '@artisan-framework/core';
 import { WebContext } from '../src';
-import { getWebProvider } from './utils';
+import { createWebProviderFactory } from './utils';
 import fs = require('fs');
 import request = require('supertest');
 
@@ -46,12 +46,22 @@ function exposeError() {
 }
 
 describe('error-handler.test.ts', () => {
+	let factory: ReturnType<typeof createWebProviderFactory>;
+
+	beforeEach(() => {
+		factory = createWebProviderFactory();
+	});
+
+	afterEach(async () => {
+		await factory.clean();
+	});
+
 	// ------------------
 	// -- html --
 	// ------------------
 
 	it('[html] should common error ok', async () => {
-		const webProvider = await getWebProvider({}, async (web) => {
+		const webProvider = await factory.getWebProvider({}, async (web) => {
 			web.server.use(commonError);
 		});
 		const resp = await request(webProvider.server.callback()).get('/').set('Accept', 'text/html');
@@ -59,7 +69,7 @@ describe('error-handler.test.ts', () => {
 	});
 
 	it('[html] should common error after sleep a little while ok', async () => {
-		const webProvider = await getWebProvider({}, async (web) => {
+		const webProvider = await factory.getWebProvider({}, async (web) => {
 			web.server.use(commonSleepError);
 		});
 
@@ -69,7 +79,7 @@ describe('error-handler.test.ts', () => {
 	});
 
 	it('[html] should stream error ok', async () => {
-		const webProvider = await getWebProvider({}, async (web) => {
+		const webProvider = await factory.getWebProvider({}, async (web) => {
 			web.server.use(streamError);
 		});
 
@@ -80,7 +90,7 @@ describe('error-handler.test.ts', () => {
 	});
 
 	it('[html] should unsafe error ok', async () => {
-		const webProvider = await getWebProvider({}, async (web) => {
+		const webProvider = await factory.getWebProvider({}, async (web) => {
 			web.server.use(unsafeError);
 		});
 
@@ -94,7 +104,7 @@ describe('error-handler.test.ts', () => {
 	// ------------------
 
 	it('[json] should common error ok', async () => {
-		const webProvider = await getWebProvider({}, async (web) => {
+		const webProvider = await factory.getWebProvider({}, async (web) => {
 			web.server.use(commonError);
 		});
 
@@ -104,7 +114,7 @@ describe('error-handler.test.ts', () => {
 	});
 
 	it('[json] should stream error ok', async () => {
-		const webProvider = await getWebProvider({}, async (web) => {
+		const webProvider = await factory.getWebProvider({}, async (web) => {
 			web.server.use(streamError);
 		});
 
@@ -115,7 +125,7 @@ describe('error-handler.test.ts', () => {
 	});
 
 	it('[json] should show status error when err.message not present', async () => {
-		const webProvider = await getWebProvider({}, async (web) => {
+		const webProvider = await factory.getWebProvider({}, async (web) => {
 			web.server.use(emptyError);
 		});
 
@@ -125,7 +135,7 @@ describe('error-handler.test.ts', () => {
 	});
 
 	it('[json] should wrap non-error object', async () => {
-		const webProvider = await getWebProvider({}, async (web) => {
+		const webProvider = await factory.getWebProvider({}, async (web) => {
 			web.server.use(() => {
 				throw 1;
 			});
@@ -139,7 +149,7 @@ describe('error-handler.test.ts', () => {
 
 	it('[json] should wrap mock error obj instead of Error instance', async () => {
 		const fn = jest.fn();
-		const webProvider = await getWebProvider({}, async (web) => {
+		const webProvider = await factory.getWebProvider({}, async (web) => {
 			web.server.on('error', (err) => {
 				fn();
 
@@ -173,7 +183,7 @@ describe('error-handler.test.ts', () => {
 	// ------------------
 
 	it('[text] should common error ok', async () => {
-		const webProvider = await getWebProvider({}, async (web) => {
+		const webProvider = await factory.getWebProvider({}, async (web) => {
 			web.server.use(commonError);
 		});
 
@@ -183,7 +193,7 @@ describe('error-handler.test.ts', () => {
 	});
 
 	it('[text] should show error message ok', async () => {
-		const webProvider = await getWebProvider({}, async (web) => {
+		const webProvider = await factory.getWebProvider({}, async (web) => {
 			web.server.use(exposeError);
 		});
 
@@ -193,7 +203,7 @@ describe('error-handler.test.ts', () => {
 	});
 
 	it('[text] should show status error when err.message not present', async () => {
-		const webProvider = await getWebProvider({}, async (web) => {
+		const webProvider = await factory.getWebProvider({}, async (web) => {
 			web.server.use(emptyError);
 		});
 
@@ -203,7 +213,7 @@ describe('error-handler.test.ts', () => {
 	});
 
 	it('[text] should set headers from error.headers ok', async () => {
-		const webProvider = await getWebProvider({}, async (web) => {
+		const webProvider = await factory.getWebProvider({}, async (web) => {
 			web.server.use(headerError);
 		});
 
@@ -213,7 +223,7 @@ describe('error-handler.test.ts', () => {
 	});
 
 	it('[text] should stream error ok', async () => {
-		const webProvider = await getWebProvider({}, async (web) => {
+		const webProvider = await factory.getWebProvider({}, async (web) => {
 			web.server.use(streamError);
 		});
 
@@ -226,9 +236,12 @@ describe('error-handler.test.ts', () => {
 	// -- errorPage --
 	// ------------------
 	it('[redirect] should handle error and redirect to real error page', async () => {
-		const webProvider = await getWebProvider({ onError: { errorPage: 'http://example/500.html' } }, async (web) => {
-			web.server.use(commonError);
-		});
+		const webProvider = await factory.getWebProvider(
+			{ onError: { errorPage: 'http://example/500.html' } },
+			async (web) => {
+				web.server.use(commonError);
+			},
+		);
 
 		const resp = await request(webProvider.server.callback()).get('/').set('Accept', 'text/html');
 
@@ -238,7 +251,7 @@ describe('error-handler.test.ts', () => {
 	});
 
 	it('[redirect] should got text/plain header', async () => {
-		const webProvider = await getWebProvider(
+		const webProvider = await factory.getWebProvider(
 			{ onError: { errorPage: () => 'http://example/400.html' } },
 			async (web) => {
 				web.server.use(commonError);
@@ -253,7 +266,7 @@ describe('error-handler.test.ts', () => {
 	});
 
 	it('[redirect] should show json when accept is json', async () => {
-		const webProvider = await getWebProvider(
+		const webProvider = await factory.getWebProvider(
 			{ onError: { errorPage: () => 'http://example/500.html' } },
 			async (web) => {
 				web.server.use(commonError);

@@ -1,12 +1,17 @@
-import { AbstractConfigProvider, ConfigProvider, globalContainer } from '@artisan-framework/core';
-import { ArtisanEncryptionProvider, EncryptionProviderConfig, EncryptionProvider } from '../src';
+import {
+	AbstractConfigHolder,
+	ArtisanApplicationContext,
+	ConfigHolder,
+	NoopLoggerProvider,
+} from '@artisan-framework/core';
+import { ArtisanEncryptionProvider, EncryptionProvider, EncryptionProviderConfig } from '../src';
 
 export async function getEncryptionProvider(config: EncryptionProviderConfig): Promise<ArtisanEncryptionProvider> {
-	const container = globalContainer.clone();
+	const context = new ArtisanApplicationContext({ logger: new NoopLoggerProvider() });
 
-	container.registerClass(
-		ConfigProvider,
-		class CP extends AbstractConfigProvider {
+	context.container.registerClass(
+		ConfigHolder,
+		class Ch extends AbstractConfigHolder {
 			config() {
 				return {
 					artisan: {
@@ -17,9 +22,9 @@ export async function getEncryptionProvider(config: EncryptionProviderConfig): P
 		},
 	);
 
-	const provider = container.resolve<ArtisanEncryptionProvider>(EncryptionProvider);
+	context.useProvider(ArtisanEncryptionProvider);
 
-	await provider.start();
+	await context.init();
 
-	return provider;
+	return context.container.resolve<ArtisanEncryptionProvider>(EncryptionProvider);
 }

@@ -17,9 +17,10 @@ export const WebContext = Symbol('Artisan#WebContext');
 
 export const WEB_PROVIDER_CONFIG_KEY = 'artisan.web';
 
-export const WEB_PROVIDER_ORDER = 80000;
+export const WEB_PROVIDER_INIT_ORDER = 5000;
 
 export interface WebServerOptions {
+	manual?: boolean;
 	port?: number;
 	hostname?: string;
 	keepAliveTimeout?: number;

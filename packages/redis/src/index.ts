@@ -1,19 +1,19 @@
-import './init';
 import _RedisLock = require('redlock');
 
 export const RedisLock = _RedisLock;
+export type RedisLockOptions = _RedisLock.Options;
 
-export * from './template';
-export { ArtisanRedisProvider } from './artisan-redis-provider';
 export { ArtisanRedis } from './artisan-redis';
+export { ArtisanRedisProvider } from './artisan-redis-provider';
 export {
-	RedisProvider,
-	REDIS_PROVIDER_CONFIG_KEY,
-	REDIS_PROVIDER_ORDER,
 	RedisClient,
+	RedisClientOptions,
+	RedisClusterOptions,
+	RedisProvider,
+	RedisProviderConfig,
 	RedisSentinelOptions,
 	RedisSimpleOptions,
-	RedisClusterOptions,
-	RedisClientOptions,
-	RedisProviderConfig,
+	REDIS_PROVIDER_CONFIG_KEY,
+	REDIS_PROVIDER_INIT_ORDER,
 } from './redis-protocol';
+export * from './template';

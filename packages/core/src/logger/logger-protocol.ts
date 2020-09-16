@@ -1,7 +1,5 @@
 import { Dictionary } from '../interfaces';
 
-export const LOGGER_CONFIG_KEY = 'artisan.logger';
-
 export const LoggerProvider = Symbol('LoggerProvider');
 
 export type LogFunction = (message: string, meta?: Dictionary) => void;

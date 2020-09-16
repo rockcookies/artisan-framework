@@ -1,4 +1,3 @@
-import './init';
 export * from './container';
 export * from './error';
 export * from './logger';

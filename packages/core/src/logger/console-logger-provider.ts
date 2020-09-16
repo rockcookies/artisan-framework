@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-empty-function */
-import { LoggerProvider } from './logger-protocol';
 import { Dictionary } from '../interfaces';
+import { LoggerProvider } from './logger-protocol';
 
 export class ConsoleLoggerProvider implements LoggerProvider {
 	constructor(private _meta?: Dictionary) {}

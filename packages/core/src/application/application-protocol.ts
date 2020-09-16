@@ -1,15 +1,45 @@
-export interface Ordered {
-	/** Get the order value of this object. */
-	order(): number;
+import { DependencyContainer } from '../container';
+import { Constructor } from '../interfaces';
+import { LoggerProvider } from '../logger';
+
+export interface OnProviderInit {
+	onProviderInit(): Promise<void>;
+}
+
+export interface ProviderInitOrder {
+	providerInitOrder(): number;
+}
+
+export interface OnProviderDestroy {
+	onProviderDestroy(): Promise<void>;
+}
+
+export interface OnApplicationBootstrap {
+	onApplicationBootstrap(): Promise<void>;
+}
+
+export interface OnApplicationShutdown {
+	onApplicationShutdown(): Promise<void>;
 }
 
 export interface Namable {
 	name(): string;
 }
 
-export interface ProviderLifecycle extends Ordered {
-	start(): Promise<void>;
-	stop(): Promise<void>;
+export const TAGGED_PROVIDER = 'artisan:tagged_provider';
+
+export const DEFAULT_PROVIDER_INIT_ORDER = 10000;
+
+export interface ProviderRegister {
+	readonly container: DependencyContainer;
+	useProvider: (providerClass: Constructor<any>) => void;
 }
 
-export const ProviderLifecycle = Symbol('Artisan#ProviderLifecycle');
+export interface ApplicationContext extends ProviderRegister {
+	init(): Promise<void>;
+	close(): Promise<void>;
+}
+
+export interface ApplicationContextOptions {
+	logger?: LoggerProvider;
+}

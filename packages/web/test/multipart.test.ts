@@ -1,11 +1,21 @@
-import { getWebProvider } from './utils';
+import { createWebProviderFactory } from './utils';
 import request = require('supertest');
 import path = require('path');
 import fs = require('fs');
 
 describe('multipart.test.ts', () => {
+	let factory: ReturnType<typeof createWebProviderFactory>;
+
+	beforeEach(() => {
+		factory = createWebProviderFactory();
+	});
+
+	afterEach(async () => {
+		await factory.clean();
+	});
+
 	it('should multipart work', async () => {
-		const webProvider = await getWebProvider({}, async (web) => {
+		const webProvider = await factory.getWebProvider({}, async (web) => {
 			web.router.post('/users', async (ctx, next) => {
 				ctx.status = 201;
 				const multipart = await ctx.multipart();

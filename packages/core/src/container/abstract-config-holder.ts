@@ -1,6 +1,6 @@
-import { ConfigProvider } from './container-protocol';
+import { ConfigHolder } from './container-protocol';
 
-export abstract class AbstractConfigProvider implements ConfigProvider {
+export abstract class AbstractConfigHolder implements ConfigHolder {
 	get<T>(key: string, defaultValue?: T): T {
 		let config = this.config();
 

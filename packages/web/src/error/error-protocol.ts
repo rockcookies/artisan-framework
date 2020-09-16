@@ -1,9 +1,9 @@
-import { ErrorOptions, Dictionary, Ordered } from '@artisan-framework/core';
+import { ErrorOptions, Dictionary } from '@artisan-framework/core';
 import { WebContext } from '../web-protocol';
 
 export const WebErrorHandler = Symbol('Artisan:WebErrorHandler');
 
-export const DEFAULT_WEB_ERROR_HANDLER_ORDER = 10000;
+export const DEFAULT_WEB_ERROR_HANDLE_ORDER = 10000;
 
 export interface HttpErrorOptions extends ErrorOptions {
 	status: number;
@@ -18,7 +18,11 @@ export interface WebOnErrorOptions {
 	notFoundPage?: string;
 }
 
-export interface WebErrorHandler extends Ordered {
+export interface WebErrorHandlerOrder {
+	errorHandleOrder(): number;
+}
+
+export interface WebErrorHandler {
 	/** Indicates whether or not this WebErrorHandler can handle the supplied view name. */
 	canHandle(err: any, ctx: WebContext): boolean;
 	/** handle Error */

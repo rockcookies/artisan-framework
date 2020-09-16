@@ -6,7 +6,7 @@ export const RedisProvider = Symbol('Artisan#RedisProvider');
 
 export const REDIS_PROVIDER_CONFIG_KEY = 'artisan.redis';
 
-export const REDIS_PROVIDER_ORDER = 20000;
+export const REDIS_PROVIDER_INIT_ORDER = 2000;
 
 export type RedisClient = Cluster | Redis;
 

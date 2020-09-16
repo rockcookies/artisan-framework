@@ -12,7 +12,7 @@ export const SequelizeProvider = Symbol('Artisan#SequelizeProvider');
 
 export const SEQUELIZE_PROVIDER_CONFIG_KEY = 'artisan.sequelize';
 
-export const SEQUELIZE_PROVIDER_ORDER = 20000;
+export const SEQUELIZE_PROVIDER_INIT_ORDER = 2000;
 
 export type EntityInstance<T> = T & Omit<Model, 'toJSON'> & { toJSON(): T };
 

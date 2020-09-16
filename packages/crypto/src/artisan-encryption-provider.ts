@@ -4,8 +4,10 @@ import {
 	Dictionary,
 	LoggerProvider,
 	Namable,
-	Ordered,
-	ProviderLifecycle,
+	OnProviderDestroy,
+	OnProviderInit,
+	provider,
+	ProviderInitOrder,
 	value,
 } from '@artisan-framework/core';
 import {
@@ -13,7 +15,7 @@ import {
 	EncryptionProvider,
 	EncryptionProviderConfig,
 	ENCRYPTION_PROVIDER_CONFIG_KEY,
-	ENCRYPTION_PROVIDER_ORDER,
+	ENCRYPTION_PROVIDER_INIT_ORDER,
 } from './crypto-protocol';
 import crypto = require('crypto');
 
@@ -31,7 +33,13 @@ const crypt = (cipher: crypto.Cipher | crypto.Decipher, data: Buffer): Buffer =>
 	return Buffer.concat([text, pad]);
 };
 
-export class ArtisanEncryptionProvider implements EncryptionProvider, ProviderLifecycle, Namable, Ordered {
+@provider({
+	register: ({ container }) => {
+		container.registerClass(EncryptionProvider, ArtisanEncryptionProvider);
+	},
+})
+export class ArtisanEncryptionProvider
+	implements EncryptionProvider, OnProviderInit, OnProviderDestroy, ProviderInitOrder, Namable {
 	private _algorithms: Array<Required<EncryptionAlgorithm>> = [];
 
 	@autowired(LoggerProvider)
@@ -44,22 +52,22 @@ export class ArtisanEncryptionProvider implements EncryptionProvider, ProviderLi
 		return 'artisan-encryption';
 	}
 
-	order(): number {
-		return ENCRYPTION_PROVIDER_ORDER;
+	providerInitOrder(): number {
+		return ENCRYPTION_PROVIDER_INIT_ORDER;
 	}
 
-	async start(): Promise<void> {
+	async onProviderInit(): Promise<void> {
 		this._algorithms = [...(this._config ? this._config.algorithms : [])].map((algorithm) => ({
 			...algorithm,
 			hmac: algorithm.hmac || 'sha256',
 			cipher: algorithm.cipher || 'aes-256-cbc',
 		}));
 
-		this._logger.info('[encryption] created', { algorithms_size: this._algorithms.length });
+		this._logger.info('[encryption] initialized', { algorithms_size: this._algorithms.length });
 	}
 
-	async stop(): Promise<void> {
-		this._logger.info('[encryption] closed');
+	async onProviderDestroy(): Promise<void> {
+		this._logger.info('[encryption] destroyed');
 	}
 
 	encrypt(data: Buffer | string): Buffer {

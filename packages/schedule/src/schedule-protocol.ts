@@ -1,4 +1,4 @@
-import { Namable, TraceContext, Ordered } from '@artisan-framework/core';
+import { Namable, TraceContext } from '@artisan-framework/core';
 
 export const ScheduleProvider = Symbol('Artisan#ScheduleProvider');
 
@@ -17,7 +17,7 @@ export interface ScheduleOptions {
 	};
 }
 
-export type ScheduleProvider = Ordered & Namable;
+export type ScheduleProvider = Namable;
 
 export interface ScheduleContext {
 	trace: TraceContext;
@@ -29,5 +29,3 @@ export interface ScheduleTask extends Namable {
 	schedule(): ScheduleOptions;
 	task(ctx: ScheduleContext): Promise<void>;
 }
-
-export const SCHEDULE_PROVIDER_ORDER = 100000;

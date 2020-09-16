@@ -12,7 +12,7 @@ export const TAGGED_POST_CONSTRUCT = 'artisan:tagged_post_construct';
 
 export const TAGGED_ADVISOR_PROPERTY = 'artisan:tagged_advisor_property';
 
-export const ConfigProvider = Symbol('Artisan#ConfigProvider');
+export const ConfigHolder = Symbol('Artisan#ConfigHolder');
 
 export const DependencyContainer = Symbol('Artisan#DependencyContainer');
 
@@ -86,6 +86,9 @@ export interface ClassRegistrationOptions {
 }
 
 export interface DependencyContainer {
+	/** 容器ID */
+	readonly id: string;
+
 	/** 注册类 */
 	registerClass<T>(
 		token: InjectionToken<T>,
@@ -93,19 +96,19 @@ export interface DependencyContainer {
 		options?: ClassRegistrationOptions,
 	): DependencyContainer;
 
+	/** 注册常量 */
+	registerConstant<T>(token: InjectionToken, constant: T): DependencyContainer;
+
+	/** 注册动态组件 */
+	registerDynamic<T>(
+		token: InjectionToken<T>,
+		dynamic: (dependencyContainer: DependencyContainer) => T,
+	): DependencyContainer;
+
 	/** 注册工厂 */
 	registerFactory<T extends ObjectFactory>(
 		token: InjectionToken<T>,
 		factory: (dependencyContainer: DependencyContainer) => T,
-	): DependencyContainer;
-
-	/** 注册常量 */
-	registerConstant<T>(token: InjectionToken, constant: T): DependencyContainer;
-
-	/** 注册工厂 */
-	registerDynamic<T>(
-		token: InjectionToken<T>,
-		dynamic: (dependencyContainer: DependencyContainer) => T,
 	): DependencyContainer;
 
 	/** 注册AOP观察者 */
@@ -134,8 +137,6 @@ export interface DependencyContainer {
 	 */
 	reset(): void;
 
-	clone(): DependencyContainer;
-
 	createChildContainer(): DependencyContainer;
 }
 
@@ -150,6 +151,6 @@ export interface MethodInvokeContext {
 	instance: any;
 }
 
-export interface ConfigProvider {
+export interface ConfigHolder {
 	get<T>(key: string, defaultValue?: T): T;
 }

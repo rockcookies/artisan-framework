@@ -6,22 +6,26 @@ import {
 	Dictionary,
 	LoggerProvider,
 	Namable,
-	Ordered,
-	ProviderLifecycle,
+	OnProviderDestroy,
+	OnProviderInit,
+	provider,
+	ProviderInitOrder,
 	value,
 } from '@artisan-framework/core';
-import { EncryptionProvider } from '@artisan-framework/crypto';
+import { ArtisanEncryptionProvider, EncryptionProvider } from '@artisan-framework/crypto';
+import { ArtisanScheduleProvider, ScheduleTask } from '@artisan-framework/schedule';
 import { createHttpTerminator, HttpTerminator } from 'http-terminator';
 import { Cookies } from './cookies';
-import { WebErrorHandler } from './error';
+import { ArtisanWebErrorHandler, DEFAULT_WEB_ERROR_HANDLE_ORDER, WebErrorHandler, WebErrorHandlerOrder } from './error';
 import { useMeta } from './middleware/meta';
 import { useNotFound } from './middleware/not-found';
 import { useSession } from './middleware/session';
 import { useStatic } from './middleware/static';
 import { useTrace } from './middleware/trace';
-import { WebMultipartProvider } from './multipart';
-import { WebSessionProvider } from './session';
-import { WebTraceProvider } from './trace';
+import { ArtisanCleanMultipartTempDirTask, WebMultipartProvider } from './multipart';
+import { ArtisanMultipartProvider } from './multipart/artisan-multipart-provider';
+import { ArtisanWebSessionProvider, WebSessionProvider } from './session';
+import { ArtisanWebTraceProvider, WebTraceProvider } from './trace';
 import { detectErrorStatus, sendToWormhole } from './utils';
 import {
 	WebContext,
@@ -30,7 +34,7 @@ import {
 	WebProviderConfig,
 	WebRouter,
 	WEB_PROVIDER_CONFIG_KEY,
-	WEB_PROVIDER_ORDER,
+	WEB_PROVIDER_INIT_ORDER,
 } from './web-protocol';
 import Koa = require('koa');
 import Router = require('@koa/router');
@@ -43,11 +47,38 @@ const ArtisanContainer = Symbol('Artisan#Container');
 
 const ROUTER_PROXY_METHODS = ['head', 'options', 'get', 'put', 'patch', 'post', 'delete', 'del', 'all'];
 
-export class ArtisanWebProvider implements WebProvider, ProviderLifecycle, Ordered, Namable {
+const hasWebErrorHandlerOrder = (instance: unknown): instance is WebErrorHandlerOrder => {
+	return (instance as WebErrorHandlerOrder).errorHandleOrder != null;
+};
+
+@provider({
+	register: (context) => {
+		// 依赖项
+		context.useProvider(ArtisanEncryptionProvider);
+		context.useProvider(ArtisanScheduleProvider);
+
+		// web
+		context.container.registerClass(WebProvider, ArtisanWebProvider);
+
+		// session
+		context.container.registerClass(WebSessionProvider, ArtisanWebSessionProvider);
+
+		// trace
+		context.container.registerClass(WebTraceProvider, ArtisanWebTraceProvider);
+
+		// multipart
+		context.container.registerClass(WebMultipartProvider, ArtisanMultipartProvider);
+		context.container.registerClass(ScheduleTask, ArtisanCleanMultipartTempDirTask);
+
+		// onError
+		context.container.registerClass(WebErrorHandler, ArtisanWebErrorHandler);
+	},
+})
+export class ArtisanWebProvider implements WebProvider, OnProviderInit, OnProviderDestroy, ProviderInitOrder, Namable {
 	server: Koa<Dictionary, WebContext>;
 	router: WebRouter<Dictionary, WebContext>;
 
-	private _terminator?: HttpTerminator;
+	protected _terminator?: HttpTerminator;
 
 	@autowired(LoggerProvider)
 	public logger: LoggerProvider;
@@ -80,32 +111,46 @@ export class ArtisanWebProvider implements WebProvider, ProviderLifecycle, Order
 		return 'artisan-web';
 	}
 
-	order(): number {
-		return WEB_PROVIDER_ORDER;
+	providerInitOrder(): number {
+		return WEB_PROVIDER_INIT_ORDER;
 	}
 
-	async start(): Promise<void> {
-		const config = this._config || {};
-		const port = config.server?.port || 4001;
-		const hostname = config.server?.hostname || '0.0.0.0';
+	async onProviderInit(): Promise<void> {
+		const config = this._config?.server || {};
 
-		await this.setup();
+		// 初始化，不执行 listen 操作
+		if (config.manual) {
+			this.logger.info('[web] initializing...', { manual: true });
 
-		// terminator
-		const server = this.server.listen(port, hostname);
-		this._terminator = createHttpTerminator({
-			server,
-		});
+			await this.setup();
 
-		this.logger.info(`[web] listening on: ${hostname}:${port}`);
+			this.logger.info('[web] initialized');
+		} else {
+			const port = config.port || 4001;
+			const hostname = config.hostname || '0.0.0.0';
+
+			this.logger.info('[web] initializing...', { port, hostname });
+
+			await this.setup();
+
+			// terminator
+			const server = this.server.listen(port, hostname);
+			this._terminator = createHttpTerminator({
+				server,
+			});
+
+			this.logger.info(`[web] initialized on: ${hostname}:${port}`);
+		}
 	}
 
-	async stop(): Promise<void> {
+	async onProviderDestroy(): Promise<void> {
+		this.logger.info('[web] destroying...');
+
 		if (this._terminator) {
 			await this._terminator.terminate();
 		}
 
-		this.logger.info('[web] stopped');
+		this.logger.info('[web] destroyed');
 	}
 
 	async setup() {
@@ -149,16 +194,19 @@ export class ArtisanWebProvider implements WebProvider, ProviderLifecycle, Order
 		this.server.use(useSession(this._sessionProvider, ArtisanSession));
 
 		// error handler
-		const errorHandlers = [...this._errorHandlers].sort((a, b) => {
-			const oA = typeof a.order === 'function' ? a.order() : 0;
-			const oB = typeof b.order === 'function' ? b.order() : 0;
-			return oA - oB;
-		});
-		((web) => {
+		((web, handlers) => {
 			web.server.context.onerror = function (err: any) {
-				web._onContextError(this, err, errorHandlers);
+				web._onContextError(this, err, handlers);
 			};
-		})(this);
+		})(
+			this,
+			[...this._errorHandlers].sort((a, b) => {
+				const oA = hasWebErrorHandlerOrder(a) ? a.errorHandleOrder() : DEFAULT_WEB_ERROR_HANDLE_ORDER;
+				const oB = hasWebErrorHandlerOrder(b) ? b.errorHandleOrder() : DEFAULT_WEB_ERROR_HANDLE_ORDER;
+
+				return oA - oB;
+			}),
+		);
 
 		// initialization
 		if (this._initializationProvider) {

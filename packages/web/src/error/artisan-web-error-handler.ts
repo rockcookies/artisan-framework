@@ -3,7 +3,7 @@ import { value } from '@artisan-framework/core';
 import { htmlEscape } from 'escape-goat';
 import { detectErrorMessage, detectErrorStatus, isProd } from '../utils';
 import { WebContext, WebProviderConfig, WEB_PROVIDER_CONFIG_KEY } from '../web-protocol';
-import { DEFAULT_WEB_ERROR_HANDLER_ORDER, WebErrorHandler } from './error-protocol';
+import { WebErrorHandler } from './error-protocol';
 
 const isDev = !isProd();
 
@@ -75,10 +75,6 @@ const HTML_ERROR = isDev
 export class ArtisanWebErrorHandler implements WebErrorHandler {
 	@value({ el: WEB_PROVIDER_CONFIG_KEY, default: {} })
 	private _config: WebProviderConfig;
-
-	order() {
-		return DEFAULT_WEB_ERROR_HANDLER_ORDER;
-	}
 
 	canHandle(): boolean {
 		return true;

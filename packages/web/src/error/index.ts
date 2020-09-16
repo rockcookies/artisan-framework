@@ -3,6 +3,7 @@ export {
 	HttpErrorOptions,
 	WebErrorHandler,
 	WebOnErrorOptions,
-	DEFAULT_WEB_ERROR_HANDLER_ORDER,
+	WebErrorHandlerOrder,
+	DEFAULT_WEB_ERROR_HANDLE_ORDER,
 } from './error-protocol';
 export * from './http-errors';

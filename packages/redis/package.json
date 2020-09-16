@@ -38,14 +38,14 @@
 	"devDependencies": {
 		"@types/jest": "^26.0.13",
 		"@types/node": "^12.12.50",
-		"@typescript-eslint/eslint-plugin": "^4.0.1",
-		"@typescript-eslint/parser": "^4.0.1",
-		"eslint": "^7.8.1",
+		"@typescript-eslint/eslint-plugin": "^4.1.1",
+		"@typescript-eslint/parser": "^4.1.1",
+		"eslint": "^7.9.0",
 		"eslint-config-prettier": "^6.11.0",
 		"eslint-plugin-prettier": "^3.1.4",
 		"jest": "^26.4.2",
 		"lerna": "^3.22.1",
-		"prettier": "^2.1.1",
+		"prettier": "^2.1.2",
 		"rimraf": "^3.0.2",
 		"strip-json-comments": "^3.1.1",
 		"ts-jest": "^26.3.0",
@@ -55,7 +55,7 @@
 	"gitHead": "2e1d7006c7e770e5b2e2dc559aeeeaa3cae5fd6f",
 	"dependencies": {
 		"@artisan-framework/core": "^0.1.28-alpha.0",
-		"@types/ioredis": "^4.17.3",
+		"@types/ioredis": "^4.17.4",
 		"@types/redlock": "^4.0.1",
 		"ioredis": "^4.17.3",
 		"redlock": "^4.1.0"

@@ -1,24 +1,32 @@
 import {
+	ArtisanException,
 	autowired,
 	LoggerProvider,
-	ProviderLifecycle,
-	value,
-	TraceContext,
-	ArtisanException,
 	Namable,
-	Ordered,
+	OnProviderDestroy,
+	OnProviderInit,
+	provider,
+	ProviderInitOrder,
+	TraceContext,
+	value,
 } from '@artisan-framework/core';
 import { ArtisanRedis } from './artisan-redis';
 import {
-	RedisProviderConfig,
-	REDIS_PROVIDER_CONFIG_KEY,
-	REDIS_PROVIDER_ORDER,
 	RedisClient,
 	RedisProvider,
+	RedisProviderConfig,
+	REDIS_PROVIDER_CONFIG_KEY,
+	REDIS_PROVIDER_INIT_ORDER,
 } from './redis-protocol';
-import { RedisTemplate, ArtisanRedisTemplate } from './template';
+import { ArtisanRedisTemplate, RedisTemplate } from './template';
 
-export class ArtisanRedisProvider implements RedisProvider, ProviderLifecycle, Namable, Ordered {
+@provider({
+	register: ({ container }) => {
+		container.registerClass(RedisProvider, ArtisanRedisProvider);
+	},
+})
+export class ArtisanRedisProvider
+	implements RedisProvider, OnProviderInit, OnProviderDestroy, ProviderInitOrder, Namable {
 	@autowired(LoggerProvider)
 	public logger: LoggerProvider;
 
@@ -31,16 +39,16 @@ export class ArtisanRedisProvider implements RedisProvider, ProviderLifecycle, N
 		return 'artisan-redis';
 	}
 
-	order(): number {
-		return REDIS_PROVIDER_ORDER;
+	providerInitOrder(): number {
+		return REDIS_PROVIDER_INIT_ORDER;
 	}
 
-	async start(): Promise<void> {
+	async onProviderInit(): Promise<void> {
 		const config = this._config || {};
 
 		const entries = Object.entries(config.clients || {});
 
-		this.logger.info('[redis] clients initialing...', { client_keys: entries.map(([key]) => key) });
+		this.logger.info('[redis] initializing...', { client_keys: entries.map(([key]) => key) });
 
 		const clients = await Promise.all(
 			entries.map(
@@ -62,10 +70,16 @@ export class ArtisanRedisProvider implements RedisProvider, ProviderLifecycle, N
 		for (const [key, client] of clients) {
 			this._clients.set(key, client);
 		}
+
+		this.logger.info('[redis] initialized');
 	}
 
-	async stop(): Promise<void> {
+	async onProviderDestroy(): Promise<void> {
+		this.logger.info('[redis] destroying...');
+
 		await Promise.all([...this._clients.values()].map((client) => client.disconnect()));
+
+		this.logger.info('[redis] destroyed');
 	}
 
 	getRedis(client?: string): RedisClient {
