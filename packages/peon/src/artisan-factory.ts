@@ -1,10 +1,4 @@
-import {
-	ApplicationContext,
-	ArtisanApplicationContext,
-	ConsoleLoggerProvider,
-	Constructor,
-	LoggerProvider,
-} from '@artisan-framework/core';
+import { ArtisanApplicationContext, ConsoleLoggerProvider, Constructor, LoggerProvider } from '@artisan-framework/core';
 import { SHUTDOWN_SIGNALS } from './constants';
 import { ApplicationCreateOptions } from './peon-protocol';
 
@@ -25,12 +19,30 @@ export class ArtisanFactoryStatic {
 			container.registerConstant(LoggerProvider, logger);
 		}
 
+		let throwCount = 0;
+
+		// https://github.com/node-modules/graceful
+		process.on('uncaughtException', (err: any) => {
+			throwCount++;
+
+			logger.error(`[peon] received uncaughtException${throwCount > 1 ? ', exit with error' : ''}: ${err}`, {
+				err,
+				throw_count: throwCount,
+			});
+
+			this._exit(1);
+		});
+
+		process.on('unhandledRejection', (err: any) => {
+			logger.error(`[peon] received unhandledRejection: ${err}`, { err });
+		});
+
 		try {
 			logger.info('[peon] staring application...');
 			await context.init();
 			logger.info('[peon] application successfully started');
 		} catch (err) {
-			logger.error(`[peon] application start error, abort the process: ${err}`, { err });
+			logger.error(`[peon] application start failed, abort with error: ${err}`, { err });
 			process.abort();
 		}
 
@@ -42,7 +54,7 @@ export class ArtisanFactoryStatic {
 			}
 
 			const cleanup = async (signal: string) => {
-				this.cleanupShutdownRefs();
+				this._cleanupShutdownRefs();
 
 				try {
 					logger.info(`[peon] received shutdown signal, commencing graceful closing...`, { signal });
@@ -50,7 +62,7 @@ export class ArtisanFactoryStatic {
 					logger.info('[peon] application successfully closed');
 					process.kill(process.pid, signal);
 				} catch (err) {
-					logger.info(`[peon] application close error, exit it now: ${err}`, { err });
+					logger.info(`[peon] application close failed, exit with error: ${err}`, { err });
 					this._exit(1);
 				}
 			};
@@ -65,33 +77,9 @@ export class ArtisanFactoryStatic {
 		}
 	}
 
-	protected async _initialize(context: ApplicationContext): Promise<void> {
-		const logger = context.container.resolve<LoggerProvider>(LoggerProvider);
-
-		// https://github.com/node-modules/graceful
-		let throwCount = 0;
-
-		process.on('uncaughtException', (err: any) => {
-			throwCount++;
-
-			logger.error(`[peon] received uncaughtException${throwCount > 1 ? ', exit it now' : ''}: ${err}`, {
-				err,
-				throw_count: throwCount,
-			});
-
-			this._exit(1);
-		});
-
-		process.on('unhandledRejection', (err: any) => {
-			logger.error(`[peon] received unhandledRejection: ${err}`, { err });
-		});
-
-		await context.init();
-	}
-
-	protected cleanupShutdownRefs() {
-		for (const unSubscribe of this._shutdownCleanupRefs) {
-			unSubscribe();
+	protected _cleanupShutdownRefs() {
+		for (const cleanup of this._shutdownCleanupRefs) {
+			cleanup();
 		}
 
 		this._shutdownCleanupRefs = [];
@@ -104,7 +92,7 @@ export class ArtisanFactoryStatic {
 			this._exited = true;
 		}
 
-		this.cleanupShutdownRefs();
+		this._cleanupShutdownRefs();
 
 		process.exit(code);
 	}

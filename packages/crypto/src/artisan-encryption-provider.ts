@@ -43,7 +43,7 @@ export class ArtisanEncryptionProvider
 	private _algorithms: Array<Required<EncryptionAlgorithm>> = [];
 
 	@autowired(LoggerProvider)
-	_logger: LoggerProvider;
+	logger: LoggerProvider;
 
 	@value(ENCRYPTION_PROVIDER_CONFIG_KEY)
 	_config?: EncryptionProviderConfig;
@@ -63,11 +63,11 @@ export class ArtisanEncryptionProvider
 			cipher: algorithm.cipher || 'aes-256-cbc',
 		}));
 
-		this._logger.info('[encryption] initialized', { algorithms_size: this._algorithms.length });
+		this.logger.info('[encryption] initialized', { algorithms_size: this._algorithms.length });
 	}
 
 	async onProviderDestroy(): Promise<void> {
-		this._logger.info('[encryption] destroyed');
+		this.logger.info('[encryption] destroyed');
 	}
 
 	encrypt(data: Buffer | string): Buffer {
@@ -88,7 +88,7 @@ export class ArtisanEncryptionProvider
 				const decipher = crypto.createDecipheriv(algorithm, key, iv);
 				return crypt(decipher, this._convertToBuffer(data));
 			} catch (err) {
-				this._logger.debug(`[encryption] decrypt data error at #${i}, length: ${length}`, {
+				this.logger.debug(`[encryption] decrypt data error at #${i}, length: ${length}`, {
 					error: err,
 				});
 			}

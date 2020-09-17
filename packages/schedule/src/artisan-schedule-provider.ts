@@ -31,7 +31,7 @@ export class ArtisanScheduleProvider implements ScheduleProvider, OnApplicationB
 	async onApplicationBootstrap(): Promise<void> {
 		const tasks = this._tasks || [];
 
-		this.logger.info('[schedule] schedule tasks initialing...', { task_size: tasks.length });
+		this.logger.info('[schedule] bootstrapping...', { task_size: tasks.length });
 
 		for (const task of tasks) {
 			this._runners.push(new ArtisanScheduleRunner(task, { logger: this.logger }));
@@ -41,10 +41,12 @@ export class ArtisanScheduleProvider implements ScheduleProvider, OnApplicationB
 			tr.start();
 		}
 
-		this.logger.info('[schedule] initialized');
+		this.logger.info('[schedule] bootstrapped');
 	}
 
 	async onProviderDestroy(): Promise<void> {
+		this.logger.info('[schedule] destroying...');
 		await Promise.all(this._runners.map((tr) => tr.stop()));
+		this.logger.info('[schedule] destroyed');
 	}
 }

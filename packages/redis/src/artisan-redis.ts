@@ -11,7 +11,7 @@ interface ArtisanRedisOptions {
 
 export class ArtisanRedis {
 	private _options: RedisClientOptions;
-	private _unSubscribeList: Array<() => void> = [];
+	private _shutdownCleanupRefs: Array<() => void> = [];
 
 	key: string;
 	logPrefix: string;
@@ -26,22 +26,13 @@ export class ArtisanRedis {
 	}
 
 	async connect(): Promise<void> {
-		try {
-			await new Promise<void>((resolve, reject) => this._connect(resolve, reject));
-		} catch (err) {
-			this.logger.error(`${this.logPrefix} connect error, disconnect it now: ${err}`, { err });
-			await this.disconnect();
-		}
+		await this._connect();
 	}
 
 	async disconnect(): Promise<void> {
+		this._cleanupShutdownRefs();
+
 		const options = this._options;
-
-		for (const unSubscribe of this._unSubscribeList) {
-			unSubscribe();
-		}
-
-		this._unSubscribeList = [];
 
 		if (options.mode === 'cluster' || options.keepAlive != null) {
 			this.logger.info(`${this.logPrefix} keepAlive detected, skip disconnection`);
@@ -58,81 +49,91 @@ export class ArtisanRedis {
 		}
 	}
 
-	protected _connect(resolve: () => void, reject: (err: any) => void) {
-		const options = this._options;
+	protected _connect(): Promise<void> {
+		return new Promise((resolve, reject) => {
+			const options = this._options;
 
-		this.logger.info(`${this.logPrefix} mode(${options.mode}) connecting...`);
+			this.logger.info(`${this.logPrefix} mode(${options.mode}) connecting...`);
 
-		if (options.mode === 'cluster') {
-			const { nodes, mode, ...restOptions } = options;
+			if (options.mode === 'cluster') {
+				const { nodes, mode, ...restOptions } = options;
 
-			if (!options.nodes || options.nodes.length <= 0) {
-				throw new ArtisanException(
-					`Redis nodes configuration is required when use client(${this.key}) in '${mode}' mode`,
-				);
+				if (!options.nodes || options.nodes.length <= 0) {
+					throw new ArtisanException(
+						`Redis nodes configuration is required when use client(${this.key}) in '${mode}' mode`,
+					);
+				}
+
+				this.client = new IORedis.Cluster(nodes, {
+					...restOptions,
+				});
+			} else if (options.mode === 'sentinel') {
+				const { mode, ...restOptions } = options;
+
+				if (!restOptions.sentinels || restOptions.sentinels.length <= 0) {
+					throw new ArtisanException(
+						`Redis sentinels configuration is required when use client(${this.key}) in '${mode}' mode`,
+					);
+				}
+
+				this.client = new IORedis({
+					...restOptions,
+				});
+			} else {
+				const { mode, ...restOptions } = options;
+
+				if (restOptions.host == null || restOptions.db == null || restOptions.port == null) {
+					throw new ArtisanException(
+						`Redis host, db, port configuration is required when use client(${this.key}) in '${mode}' mode`,
+					);
+				}
+
+				this.client = new IORedis({
+					...restOptions,
+				});
 			}
 
-			this.client = new IORedis.Cluster(nodes, {
-				...restOptions,
+			const onError = (err: any) => {
+				this.logger.error(`${this.logPrefix} received error: ${err}`, { err });
+			};
+
+			const onConnect = () => {
+				this.logger.info(`${this.logPrefix} connected`);
+			};
+
+			const onFirstReady = () => {
+				this.client.off('error', onFirstError);
+				this.client.off('ready', onFirstReady);
+
+				this.logger.info(`${this.logPrefix} ready`);
+
+				resolve();
+			};
+
+			const onFirstError = (err: any) => {
+				this.client.off('error', onFirstError);
+				this.client.off('ready', onFirstReady);
+
+				reject(err);
+			};
+
+			Array.from<[string, (...args: any[]) => void]>([
+				['error', onError],
+				['connect', onConnect],
+				['ready', onFirstReady],
+				['error', onFirstError],
+			]).forEach(([event, listener]) => {
+				this._shutdownCleanupRefs.push(() => this.client.off(event, listener));
+				this.client.on(event, listener);
 			});
-		} else if (options.mode === 'sentinel') {
-			const { mode, ...restOptions } = options;
+		});
+	}
 
-			if (!restOptions.sentinels || restOptions.sentinels.length <= 0) {
-				throw new ArtisanException(
-					`Redis sentinels configuration is required when use client(${this.key}) in '${mode}' mode`,
-				);
-			}
-
-			this.client = new IORedis({
-				...restOptions,
-			});
-		} else {
-			const { mode, ...restOptions } = options;
-
-			if (restOptions.host == null || restOptions.db == null || restOptions.port == null) {
-				throw new ArtisanException(
-					`Redis host, db, port configuration is required when use client(${this.key}) in '${mode}' mode`,
-				);
-			}
-
-			this.client = new IORedis({
-				...restOptions,
-			});
+	protected _cleanupShutdownRefs() {
+		for (const cleanup of this._shutdownCleanupRefs) {
+			cleanup();
 		}
 
-		const onError = (err: any) => {
-			this.logger.error(`${this.logPrefix} received error: ${err}`, { err });
-		};
-
-		const onConnect = () => {
-			this.logger.info(`${this.logPrefix} connect`);
-		};
-
-		const onFirstReady = () => {
-			this.client.off('error', onFirstError);
-			this.client.off('ready', onFirstReady);
-
-			this.logger.info(`${this.logPrefix} ready`);
-
-			resolve();
-		};
-
-		const onFirstError = (err: any) => {
-			this.client.off('error', onFirstError);
-			this.client.off('ready', onFirstReady);
-
-			reject(err);
-		};
-
-		for (const [event, listener] of Array.from<[string, (...args: any[]) => void]>([
-			['error', onError],
-			['connect', onConnect],
-			['ready', onFirstReady],
-			['error', onFirstError],
-		])) {
-			this._unSubscribeList.push(() => this.client.off(event, listener));
-			this.client.on(event, listener);
-		}
+		this._shutdownCleanupRefs = [];
 	}
 }

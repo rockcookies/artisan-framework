@@ -27,7 +27,7 @@ import {
 export class ArtisanHttpClientProvider
 	implements HttpClientProvider, OnProviderInit, OnProviderDestroy, ProviderInitOrder, Namable {
 	@autowired(LoggerProvider)
-	_logger: LoggerProvider;
+	logger: LoggerProvider;
 
 	@value(HTTP_CLIENT_PROVIDER_CONFIG_KEY)
 	_config?: HttpClientProviderConfig;
@@ -72,15 +72,15 @@ export class ArtisanHttpClientProvider
 			});
 		}
 
-		this._logger.debug('[http-client] initializing...', { options });
+		this.logger.debug('[http-client] initializing...', { options });
 
 		this._client = urllib.create(options);
 
-		this._logger.info('[http-client] initialized');
+		this.logger.info('[http-client] initialized');
 	}
 
 	async onProviderDestroy(): Promise<void> {
-		this._logger.info('[http-client] destroyed');
+		this.logger.info('[http-client] destroyed');
 	}
 
 	async request<T = any>(url: string | URL, _options?: HttpRequestOptions): Promise<urllib.HttpClientResponse<T>> {
