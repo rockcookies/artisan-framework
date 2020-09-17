@@ -8,7 +8,6 @@ import {
 	ClassRegistry,
 	ConfigHolder,
 	DependencyContainer,
-	DynamicRegistry,
 	InjectableScope,
 	InjectionToken,
 	ObjectFactory,
@@ -19,10 +18,7 @@ import {
 import { LazyConstructor } from './decorators/object';
 import { NOT_REGISTERED } from './messages';
 import { Registry } from './registry';
-
-interface ResolutionContext {
-	dependencies: Map<Constructor<any>, any>;
-}
+import { ResolutionContext } from './resolution-context';
 
 interface SingletonCache {
 	instance: any;
@@ -38,8 +34,8 @@ export class ArtisanDependencyContainer implements DependencyContainer {
 	_registry: Registry;
 	_advisorManager: AdvisorManager;
 
-	_singletonCache = new Map<ClassRegistry | AdvisorRegistry, SingletonCache>();
-	_dynamicCache = new Map<DynamicRegistry, DynamicCache>();
+	_singletonCache = new Map<Constructor<any>, SingletonCache>();
+	_dynamicCache = new Map<(c: DependencyContainer) => any, DynamicCache>();
 
 	constructor(public parent?: ArtisanDependencyContainer) {
 		this._registry = new Registry(this);
@@ -122,7 +118,7 @@ export class ArtisanDependencyContainer implements DependencyContainer {
 
 	_resolve(
 		meta: Pick<TaggedAutowiredMetadata, 'token' | 'isArray' | 'optional'>,
-		ctx: ResolutionContext = { dependencies: new Map<Constructor<any>, any>() },
+		ctx: ResolutionContext = new ResolutionContext(),
 	): any {
 		const token = meta.token instanceof LazyConstructor ? meta.token.unwrap() : meta.token;
 		const registries = meta.isArray ? this._getAllRegistration(token) : this._getRegistration(token);
@@ -148,13 +144,13 @@ export class ArtisanDependencyContainer implements DependencyContainer {
 		}
 
 		if (reg.type === 'dynamic') {
-			const dynamicCache = this._getDynamicCache(reg);
+			const dynamicCache = this._getDynamicCache(reg.dynamic);
 
 			if (dynamicCache) {
 				return dynamicCache.instance;
 			} else {
 				const dynamic = reg.dynamic(this);
-				this._dynamicCache.set(reg, { instance: dynamic });
+				this._dynamicCache.set(reg.dynamic, { instance: dynamic });
 				return dynamic;
 			}
 		}
@@ -167,7 +163,7 @@ export class ArtisanDependencyContainer implements DependencyContainer {
 			return this._construct(reg, ctx);
 		}
 
-		const singletonCache = this._getSingletonCache(reg);
+		const singletonCache = this._getSingletonCache(reg.clz);
 		if (singletonCache) {
 			return singletonCache.instance;
 		}
@@ -175,15 +171,15 @@ export class ArtisanDependencyContainer implements DependencyContainer {
 		const instance = this._construct(reg, ctx);
 
 		// 放入单例缓存
-		this._singletonCache.set(reg, { instance });
+		this._singletonCache.set(reg.clz, { instance });
 
 		return instance;
 	}
 
 	private _construct(reg: ClassRegistry | AdvisorRegistry, ctx: ResolutionContext): any {
 		// 尝试获取构建中缓存
-		if (ctx.dependencies.has(reg.clz)) {
-			return ctx.dependencies.get(reg.clz);
+		if (ctx.scopedResolutions.has(reg.clz)) {
+			return ctx.scopedResolutions.get(reg.clz);
 		}
 
 		// 检查循环依赖
@@ -227,7 +223,7 @@ export class ArtisanDependencyContainer implements DependencyContainer {
 		}
 
 		// 放入构建缓存
-		ctx.dependencies.set(reg.clz, instance);
+		ctx.scopedResolutions.set(reg.clz, instance);
 
 		// 解析属性依赖
 		for (const propertyKey in reg.properties) {
@@ -242,27 +238,27 @@ export class ArtisanDependencyContainer implements DependencyContainer {
 		return instance;
 	}
 
-	private _getDynamicCache(reg: DynamicRegistry): DynamicCache | undefined {
-		const cache = this._dynamicCache.get(reg);
+	private _getDynamicCache(dynamic: (c: DependencyContainer) => any): DynamicCache | undefined {
+		const cache = this._dynamicCache.get(dynamic);
 
 		if (cache) {
-			return cache.instance;
+			return cache;
 		}
 
 		if (this.parent) {
-			return this.parent._getDynamicCache(reg);
+			return this.parent._getDynamicCache(dynamic);
 		}
 	}
 
-	private _getSingletonCache(reg: ClassRegistry | AdvisorRegistry): SingletonCache | undefined {
-		const cache = this._singletonCache.get(reg);
+	private _getSingletonCache(ctor: Constructor<any>): SingletonCache | undefined {
+		const cache = this._singletonCache.get(ctor);
 
 		if (cache) {
-			return cache.instance;
+			return cache;
 		}
 
 		if (this.parent) {
-			return this.parent._getSingletonCache(reg);
+			return this.parent._getSingletonCache(ctor);
 		}
 	}
 

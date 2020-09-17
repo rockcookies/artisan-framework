@@ -1,8 +1,8 @@
 import is from '@sindresorhus/is';
-import { Constructor } from '../interfaces';
 import { ArtisanDependencyContainer } from './artisan-dependency-container';
 import { AdvisorRegistry, ClassRegistry, MethodInvokeContext } from './container-protocol';
 import { AdvisorMethodOptions } from './decorators/advice';
+import { ResolutionContext } from './resolution-context';
 
 export class AdvisorManager {
 	private _advisedInstances = new Map<any, any>();
@@ -89,7 +89,7 @@ export class AdvisorManager {
 		const result: Array<[AdvisorRegistry, any]> = [];
 
 		if (registries && registries.length > 0) {
-			const ctx = { dependencies: new Map<Constructor<any>, any>() };
+			const ctx = new ResolutionContext();
 
 			for (const reg of registries) {
 				result.push([reg, this.container._resolveRegistry(reg, ctx)]);

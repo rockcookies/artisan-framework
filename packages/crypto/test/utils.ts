@@ -14,9 +14,7 @@ export async function getEncryptionProvider(config: EncryptionProviderConfig): P
 		class Ch extends AbstractConfigHolder {
 			config() {
 				return {
-					artisan: {
-						encryption: config,
-					},
+					artisan: { encryption: config },
 				};
 			}
 		},
