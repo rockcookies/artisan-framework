@@ -125,10 +125,6 @@ export class Registry {
 		}
 	}
 
-	getAllAdvisors(): AdvisorRegistry[] | undefined {
-		return this.getAll(AdvisorToken) as any;
-	}
-
 	get(token: InjectionToken): ServiceRegistry | undefined {
 		const registries = this.getAll(token);
 		return registries && registries[registries.length - 1];
@@ -136,6 +132,10 @@ export class Registry {
 
 	getAll(token: InjectionToken): ServiceRegistry[] | undefined {
 		return this._registries.get(token);
+	}
+
+	getAllAdvisors(): AdvisorRegistry[] | undefined {
+		return this.getAll(AdvisorToken) as any;
 	}
 
 	has(token: InjectionToken): boolean {

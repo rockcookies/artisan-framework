@@ -8,6 +8,7 @@ import {
 	ClassRegistry,
 	ConfigHolder,
 	DependencyContainer,
+	DynamicRegistry,
 	InjectableScope,
 	InjectionToken,
 	ObjectFactory,
@@ -23,14 +24,22 @@ interface ResolutionContext {
 	dependencies: Map<Constructor<any>, any>;
 }
 
+interface SingletonCache {
+	instance: any;
+}
+
+interface DynamicCache {
+	instance: any;
+}
+
 export class ArtisanDependencyContainer implements DependencyContainer {
 	id = `container-${randomString(8)}`;
 
 	_registry: Registry;
 	_advisorManager: AdvisorManager;
 
-	_singletonCache = new Map<Constructor<any>, any>();
-	_dynamicCache = new Map<(c: DependencyContainer) => any, any>();
+	_singletonCache = new Map<ClassRegistry | AdvisorRegistry, SingletonCache>();
+	_dynamicCache = new Map<DynamicRegistry, DynamicCache>();
 
 	constructor(public parent?: ArtisanDependencyContainer) {
 		this._registry = new Registry(this);
@@ -139,11 +148,13 @@ export class ArtisanDependencyContainer implements DependencyContainer {
 		}
 
 		if (reg.type === 'dynamic') {
-			if (this._dynamicCache.has(reg.dynamic)) {
-				return this._dynamicCache.get(reg.dynamic);
+			const dynamicCache = this._getDynamicCache(reg);
+
+			if (dynamicCache) {
+				return dynamicCache.instance;
 			} else {
 				const dynamic = reg.dynamic(this);
-				this._dynamicCache.set(reg.dynamic, dynamic);
+				this._dynamicCache.set(reg, { instance: dynamic });
 				return dynamic;
 			}
 		}
@@ -156,14 +167,15 @@ export class ArtisanDependencyContainer implements DependencyContainer {
 			return this._construct(reg, ctx);
 		}
 
-		if (this._singletonCache.has(reg.clz)) {
-			return this._singletonCache.get(reg.clz);
+		const singletonCache = this._getSingletonCache(reg);
+		if (singletonCache) {
+			return singletonCache.instance;
 		}
 
 		const instance = this._construct(reg, ctx);
 
 		// 放入单例缓存
-		this._singletonCache.set(reg.clz, instance);
+		this._singletonCache.set(reg, { instance });
 
 		return instance;
 	}
@@ -228,6 +240,30 @@ export class ArtisanDependencyContainer implements DependencyContainer {
 		}
 
 		return instance;
+	}
+
+	private _getDynamicCache(reg: DynamicRegistry): DynamicCache | undefined {
+		const cache = this._dynamicCache.get(reg);
+
+		if (cache) {
+			return cache.instance;
+		}
+
+		if (this.parent) {
+			return this.parent._getDynamicCache(reg);
+		}
+	}
+
+	private _getSingletonCache(reg: ClassRegistry | AdvisorRegistry): SingletonCache | undefined {
+		const cache = this._singletonCache.get(reg);
+
+		if (cache) {
+			return cache.instance;
+		}
+
+		if (this.parent) {
+			return this.parent._getSingletonCache(reg);
+		}
 	}
 
 	private _getRegistration(token: InjectionToken): ServiceRegistry | undefined {
