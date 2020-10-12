@@ -1,6 +1,6 @@
 {
 	"name": "@artisan-framework/sequelize",
-	"version": "0.1.33-alpha.0",
+	"version": "0.1.34-alpha.0",
 	"description": "",
 	"license": "MIT",
 	"main": "build/index.js",
@@ -35,25 +35,25 @@
 		"prepublishOnly": "npm run clean && npm run compile"
 	},
 	"devDependencies": {
-		"@types/jest": "^26.0.13",
+		"@types/jest": "^26.0.14",
 		"@types/node": "^12.12.50",
-		"@typescript-eslint/eslint-plugin": "^4.1.1",
-		"@typescript-eslint/parser": "^4.1.1",
-		"eslint": "^7.9.0",
-		"eslint-config-prettier": "^6.11.0",
+		"@typescript-eslint/eslint-plugin": "^4.4.0",
+		"@typescript-eslint/parser": "^4.4.0",
+		"eslint": "^7.11.0",
+		"eslint-config-prettier": "^6.12.0",
 		"eslint-plugin-prettier": "^3.1.4",
-		"jest": "^26.4.2",
+		"jest": "^26.5.3",
 		"lerna": "^3.22.1",
 		"prettier": "^2.1.2",
 		"rimraf": "^3.0.2",
 		"strip-json-comments": "^3.1.1",
-		"ts-jest": "^26.3.0",
+		"ts-jest": "^26.4.1",
 		"ts-node": "^9.0.0",
-		"typescript": "^4.0.2"
+		"typescript": "^4.0.3"
 	},
 	"dependencies": {
-		"@artisan-framework/core": "^0.1.33-alpha.0",
-		"mysql2": "^2.1.0",
+		"@artisan-framework/core": "^0.1.34-alpha.0",
+		"mysql2": "^2.2.5",
 		"sequelize": "^6.3.5"
 	},
 	"gitHead": "a280578a5d8997b840053a7afef088e64a9153dc"
