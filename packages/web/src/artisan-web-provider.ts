@@ -401,6 +401,7 @@ export class ArtisanWebProvider implements WebProvider, OnProviderInit, OnProvid
 		for (const handler of handlers) {
 			if (handler.canHandle(err, ctx)) {
 				handler.handle(err, ctx);
+				break;
 			}
 		}
 	}
