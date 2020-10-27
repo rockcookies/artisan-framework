@@ -1,6 +1,6 @@
 {
 	"name": "@artisan-framework/http-client",
-	"version": "0.1.34-alpha.0",
+	"version": "0.1.35-alpha.0",
 	"description": "",
 	"license": "MIT",
 	"main": "build/index.js",
@@ -50,7 +50,7 @@
 		"typescript": "^4.0.3"
 	},
 	"dependencies": {
-		"@artisan-framework/core": "^0.1.34-alpha.0",
+		"@artisan-framework/core": "^0.1.35-alpha.0",
 		"agentkeepalive": "^4.1.3",
 		"urllib": "^2.36.1"
 	},
