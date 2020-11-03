@@ -37,6 +37,6 @@ describe('object.test.ts', () => {
 		expect(r2.isError === true && r2.error.message).toBe('expected strict');
 
 		const r3 = V.object().shape({ a: V.string() }).nonStrict().decode(obj, { convert: true });
-		expect(r3.isError === false && r3.value).toStrictEqual({ a: '1', b: '2' });
+		expect(r3.isError === false && r3.value).toStrictEqual({ a: '1' });
 	});
 });

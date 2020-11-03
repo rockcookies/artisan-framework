@@ -35,12 +35,13 @@ export class ObjectCriterion<T extends CriterionShape = CriterionShape> extends 
 					return okRes(value);
 				}
 
+				const convert = context.options.convert;
 				const strict = _options.strict === undefined ? true : _options.strict;
 				const shapeKeys = Object.keys(shape);
 				const valueKeys = Object.keys(value);
 				const unknownKeys = valueKeys.filter((key) => !shapeKeys.includes(key));
 
-				if (strict && unknownKeys.length > 0) {
+				if (!convert && strict && unknownKeys.length > 0) {
 					return err(locale.strict, { path }, value);
 				}
 
@@ -73,6 +74,11 @@ export class ObjectCriterion<T extends CriterionShape = CriterionShape> extends 
 				// error
 				if (errors.length > 0) {
 					return err(locale.shape, { path }, value, errors);
+				}
+
+				// convert
+				if (convert) {
+					return okRes(changed ? newValue : value);
 				}
 
 				// unknown keys
