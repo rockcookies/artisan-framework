@@ -78,7 +78,7 @@ export class ObjectCriterion<T extends CriterionShape = CriterionShape> extends 
 
 				// convert
 				if (convert) {
-					return okRes(changed ? newValue : value);
+					return okRes(changed || unknownKeys.length > 0 ? newValue : value);
 				}
 
 				// unknown keys
