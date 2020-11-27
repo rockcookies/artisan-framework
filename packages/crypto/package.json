@@ -1,6 +1,6 @@
 {
 	"name": "@artisan-framework/crypto",
-	"version": "0.1.38-alpha.0",
+	"version": "0.1.39-alpha.0",
 	"description": "",
 	"license": "MIT",
 	"main": "build/index.js",
@@ -52,6 +52,6 @@
 	},
 	"gitHead": "a280578a5d8997b840053a7afef088e64a9153dc",
 	"dependencies": {
-		"@artisan-framework/core": "^0.1.38-alpha.0"
+		"@artisan-framework/core": "^0.1.39-alpha.0"
 	}
 }

@@ -1,6 +1,6 @@
 {
 	"name": "@artisan-framework/sequelize",
-	"version": "0.1.38-alpha.0",
+	"version": "0.1.39-alpha.0",
 	"description": "",
 	"license": "MIT",
 	"main": "build/index.js",
@@ -52,7 +52,7 @@
 		"typescript": "^4.1.2"
 	},
 	"dependencies": {
-		"@artisan-framework/core": "^0.1.38-alpha.0",
+		"@artisan-framework/core": "^0.1.39-alpha.0",
 		"mysql2": "^2.2.5",
 		"sequelize": "^6.3.5"
 	},
