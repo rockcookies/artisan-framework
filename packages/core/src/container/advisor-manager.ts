@@ -1,8 +1,11 @@
-import is from '@sindresorhus/is';
 import { ArtisanDependencyContainer } from './artisan-dependency-container';
 import { AdvisorRegistry, ClassRegistry, MethodInvokeContext } from './container-protocol';
 import { AdvisorMethodOptions } from './decorators/advice';
 import { ResolutionContext } from './resolution-context';
+
+const isPromise = <T = unknown>(obj: any): obj is Promise<T> => {
+	return !!obj && (typeof obj === 'object' || typeof obj.then === 'function') && typeof obj.then === 'function';
+};
 
 export class AdvisorManager {
 	private _advisedInstances = new Map<any, any>();
@@ -56,7 +59,7 @@ export class AdvisorManager {
 						throw ex;
 					}
 
-					if (!is.promise(invokeResult)) {
+					if (!isPromise(invokeResult)) {
 						ctx.result = invokeResult;
 						this.wavingMethodSync(ctx, advisors, 'afterSyncMethodReturning');
 
