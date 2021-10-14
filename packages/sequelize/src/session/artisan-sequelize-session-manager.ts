@@ -47,7 +47,7 @@ export class ArtisanSequelizeSessionManager implements SequelizeTransactionManag
 
 	constructor(protected _sequelize: ArtisanSequelize, options?: Transactionable & { trace?: TraceContext }) {
 		this.sequelize = _sequelize.instance;
-		this._transaction = options?.transaction;
+		this._transaction = options?.transaction || undefined;
 		this._trace = options?.trace;
 	}
 

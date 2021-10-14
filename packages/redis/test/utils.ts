@@ -1,7 +1,6 @@
 import fs = require('fs');
 import util = require('util');
 import path = require('path');
-import stripJsonComments = require('strip-json-comments');
 import {
 	AbstractConfigHolder,
 	ApplicationContext,
@@ -17,7 +16,7 @@ export async function getRedisContext(): Promise<ApplicationContext> {
 	const context = new ArtisanApplicationContext({ logger: new NoopLoggerProvider() });
 
 	const json = await readFile(path.join(__dirname, './redis.json'), { encoding: 'utf-8' });
-	const redisOptions: RedisClientOptions = JSON.parse(stripJsonComments(json));
+	const redisOptions: RedisClientOptions = JSON.parse(json);
 
 	const config: RedisProviderConfig = {
 		clients: { default: { ...redisOptions } },

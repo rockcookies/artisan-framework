@@ -9,7 +9,7 @@ export function createModelEpic(model: ArcherModel, enhancer: (epics: ArcherEpic
 }
 
 export function createRootEpic(store: Store, epics: Epic[], _onErrors: ArcherErrorHandler[]): [Subject<Epic>, Epic] {
-	const epic$ = new BehaviorSubject(combineEpics<Epic>(...epics));
+	const epic$ = new BehaviorSubject(combineEpics(...epics));
 
 	const onErrors: ArcherErrorHandler[] = [
 		...[..._onErrors].sort((a: any, b: any) => {
@@ -69,5 +69,5 @@ export function updateEpics(store: Store, subject: Subject<Epic>, nextEpics: Epi
 	});
 
 	// Now setup the new one
-	subject.next(combineEpics<Epic>(...nextEpics));
+	subject.next(combineEpics(...nextEpics));
 }

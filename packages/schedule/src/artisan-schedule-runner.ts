@@ -130,7 +130,7 @@ export class ArtisanScheduleRunner {
 			do {
 				try {
 					nextInterval = this._cronExpression.next();
-					nextTick = nextInterval.getTime();
+					nextTick = (nextInterval as any).getTime();
 				} catch (err) {
 					// Error: Out of the timespan range
 					return;

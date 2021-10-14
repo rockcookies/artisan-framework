@@ -1,33 +1,46 @@
 {
-	"name": "@artisan-framework/parent",
-	"private": true,
-	"description": "Artisan Framework is a serverless First, scalable and componentized application framework.",
-	"main": "build/index.js",
-	"scripts": {
-		"clean": "lerna run clean",
-		"precompile": "tsc --version",
-		"compile": "lerna run compile",
-		"test": "lerna run test",
-		"bootstrap": "lerna bootstrap",
-		"bump": "lerna publish",
-		"codecov": "lerna run codecov",
-		"lint": "lerna run lint",
-		"lint:fix": "lerna run lint:fix"
-	},
-	"workspaces": [
-		"packages/*"
-	],
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/Rockcookies/artisan-framework.git"
-	},
-	"keywords": [
-		"artisan-framework"
-	],
-	"author": "RockCookies",
-	"license": "MIT",
-	"bugs": {
-		"url": "https://github.com/Rockcookies/artisan-framework/issues"
-	},
-	"homepage": "https://github.com/Rockcookies/artisan-framework#readme"
+  "private": true,
+  "main": "build/index.js",
+  "scripts": {
+    "clean": "lerna run clean",
+    "precompile": "tsc --version",
+    "compile": "lerna run compile",
+    "test": "lerna run test",
+    "bootstrap": "lerna bootstrap",
+    "bump": "lerna publish",
+    "codecov": "lerna run codecov",
+    "lint": "lerna run lint",
+    "lint:fix": "lerna run lint:fix"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rockcookies/artisan-framework.git"
+  },
+  "keywords": [
+    "artisan-framework"
+  ],
+  "author": "RockCookies",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Rockcookies/artisan-framework/issues"
+  },
+  "homepage": "https://github.com/Rockcookies/artisan-framework#readme",
+  "devDependencies": {
+    "@types/jest": "^27.0.2",
+    "@typescript-eslint/eslint-plugin": "^5.0.0",
+    "@typescript-eslint/parser": "^5.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "jest": "^27.2.5",
+    "lerna": "^4.0.0",
+    "lint-staged": "^11.2.0",
+    "prettier": "^2.4.1",
+    "ts-jest": "^27.0.5",
+    "ts-node": "^10.3.0",
+    "yorkie": "^2.0.0"
+  }
 }

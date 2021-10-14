@@ -1,9 +1,9 @@
 import http = require('http');
 import { value } from '@artisan-framework/core';
-import { htmlEscape } from 'escape-goat';
 import { detectErrorMessage, detectErrorStatus, isProd } from '../utils';
 import { WebContext, WebProviderConfig, WEB_PROVIDER_CONFIG_KEY } from '../web-protocol';
 import { WebErrorHandler } from './error-protocol';
+import escapeHtml = require('escape-html');
 
 const isDev = !isProd();
 
@@ -103,9 +103,9 @@ export class ArtisanWebErrorHandler implements WebErrorHandler {
 			ctx.type = type;
 
 			if (type === 'html') {
-				ctx.body = HTML_ERROR.replace('{{status}}', htmlEscape(`${ctx.status}`)).replace(
+				ctx.body = HTML_ERROR.replace('{{status}}', escapeHtml(`${ctx.status}`)).replace(
 					'{{stack}}',
-					htmlEscape(err.stack),
+					escapeHtml(err.stack),
 				);
 			} else if (type === 'text') {
 				// unset all headers, and set those specified

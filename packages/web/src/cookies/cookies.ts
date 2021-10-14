@@ -6,18 +6,16 @@ import { isSameSiteNoneCompatible } from 'should-send-same-site-none';
 import { ArtisanException } from '@artisan-framework/core';
 
 export class Cookies implements WebCookies {
-	constructor(readonly ctx: WebContext, readonly encrypter?: EncryptionProvider) {}
-
-	private static patternCache = new Map<string, RegExp>();
+	constructor(public readonly ctx: WebContext, readonly encrypter?: EncryptionProvider) {}
 
 	get(name: string, opts: WebCookiesGetOptions = {}): string | undefined {
 		opts = { ...opts };
-		const signed = this.computeSigned(opts);
+		const signed = computeSigned(opts);
 
 		const header = this.ctx.get('cookie');
 		if (!header) return;
 
-		const match = header.match(this.getPattern(name));
+		const match = header.match(getPattern(name));
 		if (!match) return;
 
 		const value = match[1];
@@ -55,7 +53,7 @@ export class Cookies implements WebCookies {
 
 	set(name: string, _value?: string | null | undefined, opts: WebCookiesSetOptions = {}): this {
 		opts = { ...opts };
-		const signed = this.computeSigned(opts);
+		const signed = computeSigned(opts);
 		let value = _value || '';
 
 		if (!this.ctx.secure && opts.secure) {
@@ -91,14 +89,14 @@ export class Cookies implements WebCookies {
 		// if user not set secure, reset secure to ctx.secure
 		if (opts.secure === undefined) cookie.attrs.secure = this.ctx.secure;
 
-		headers = this.pushCookie(headers, cookie);
+		headers = pushCookie(headers, cookie);
 
 		// signed
 		if (signed) {
 			const encrypter = this.getEncrypter();
 			cookie.value = value && encrypter.sign(Buffer.from(name + '=' + value));
 			cookie.name = name + '.sig';
-			headers = this.pushCookie(headers, cookie);
+			headers = pushCookie(headers, cookie);
 		}
 
 		this.ctx.set('set-cookie', headers);
@@ -123,27 +121,29 @@ export class Cookies implements WebCookies {
 
 		return parseInt(m[1]) >= 80;
 	}
+}
 
-	private computeSigned(opts: WebCookiesGetOptions) {
-		// encrypt default to false, signed default to true.
-		// disable singed when encrypt is true.
-		if (opts.encrypt) return false;
-		return opts.signed !== false;
-	}
+function computeSigned(opts: WebCookiesGetOptions) {
+	// encrypt default to false, signed default to true.
+	// disable singed when encrypt is true.
+	if (opts.encrypt) return false;
+	return opts.signed !== false;
+}
 
-	private getPattern(name: string): RegExp {
-		const cache = Cookies.patternCache.get(name);
-		if (cache) return cache;
-		const reg = new RegExp('(?:^|;) *' + name.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') + '=([^;]*)');
-		Cookies.patternCache.set(name, reg);
-		return reg;
-	}
+const patternCache = new Map<string, RegExp>();
 
-	private pushCookie(cookies: string[], cookie: Cookie): string[] {
-		if (cookie.attrs.overwrite) {
-			cookies = cookies.filter((c) => !c.startsWith(cookie.name + '='));
-		}
-		cookies.push(cookie.toHeader());
-		return cookies;
+function getPattern(name: string): RegExp {
+	const cache = patternCache.get(name);
+	if (cache) return cache;
+	const reg = new RegExp('(?:^|;) *' + name.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') + '=([^;]*)');
+	patternCache.set(name, reg);
+	return reg;
+}
+
+function pushCookie(cookies: string[], cookie: Cookie): string[] {
+	if (cookie.attrs.overwrite) {
+		cookies = cookies.filter((c) => !c.startsWith(cookie.name + '='));
 	}
+	cookies.push(cookie.toHeader());
+	return cookies;
 }

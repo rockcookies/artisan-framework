@@ -1,7 +1,6 @@
 import fs = require('fs');
 import util = require('util');
 import path = require('path');
-import stripJsonComments = require('strip-json-comments');
 import {
 	AbstractConfigHolder,
 	ApplicationContext,
@@ -17,7 +16,7 @@ export async function getSequelizeContext(options: Partial<SequelizeOptions>): P
 	const context = new ArtisanApplicationContext({ logger: new NoopLoggerProvider() });
 
 	const json = await readFile(path.join(__dirname, './db.json'), { encoding: 'utf-8' });
-	const dbOptions: SequelizeOptions = JSON.parse(stripJsonComments(json));
+	const dbOptions: SequelizeOptions = JSON.parse(json);
 
 	const config: SequelizeProviderConfig = {
 		datasources: { default: { ...dbOptions, ...options } },

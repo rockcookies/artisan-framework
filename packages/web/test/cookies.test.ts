@@ -51,6 +51,12 @@ describe('cookies.test.ts', () => {
 		return new Cookies(ctx, algorithms === false ? undefined : encryption);
 	};
 
+	const getCookies = (c: Cookies): any => {
+		const headers = c.ctx.response.headers;
+		const cookies = headers['set-cookie'];
+		return cookies;
+	};
+
 	it('should encrypt error when keys not present', async () => {
 		const cookies = await createCookies({ algorithms: false });
 
@@ -67,7 +73,7 @@ describe('cookies.test.ts', () => {
 	it('should encrypt ok', async () => {
 		const cookies = await createCookies({});
 		cookies.set('foo', 'bar', { encrypt: true });
-		const cookie = cookies.ctx.response.headers['set-cookie'][0];
+		const cookie = getCookies(cookies)[0];
 		cookies.ctx.request.headers.cookie = cookie;
 		const value = cookies.get('foo', { encrypt: true });
 
@@ -78,7 +84,7 @@ describe('cookies.test.ts', () => {
 	it('should encrypt failed return undefined', async () => {
 		const cookies = await createCookies({});
 		cookies.set('foo', 'bar', { encrypt: true });
-		const cookie = cookies.ctx.response.headers['set-cookie'][0];
+		const cookie = getCookies(cookies)[0];
 		const newCookies = await createCookies({ algorithms: [createAlgorithm()] }, { headers: { cookie } });
 		const value = newCookies.get('foo', { encrypt: true });
 		expect(value).toBe(undefined);
@@ -87,7 +93,7 @@ describe('cookies.test.ts', () => {
 	it('should disable signed when encrypt enable', async () => {
 		const cookies = await createCookies({});
 		cookies.set('foo', 'bar', { encrypt: true, signed: true });
-		const cookie = cookies.ctx.response.headers['set-cookie'].join(';');
+		const cookie = getCookies(cookies).join(';');
 		cookies.ctx.request.headers.cookie = cookie;
 		const value = cookies.get('foo', { encrypt: true });
 		expect(value).toBe('bar');
@@ -100,14 +106,14 @@ describe('cookies.test.ts', () => {
 			secure: true,
 		});
 		cookies.set('foo', 'bar', { encrypt: true });
-		const cookie = cookies.ctx.response.headers['set-cookie'][0];
+		const cookie = getCookies(cookies)[0];
 		expect(cookie.indexOf('secure') > 0).toBe(true);
 	});
 
 	it('should signed work fine', async () => {
 		const cookies = await createCookies({});
 		cookies.set('foo', 'bar', { signed: true });
-		const cookie = cookies.ctx.response.headers['set-cookie'].join(';');
+		const cookie = getCookies(cookies).join(';');
 		expect(cookie.indexOf('foo=bar') >= 0).toBe(true);
 		expect(cookie.indexOf('foo.sig=') >= 0).toBe(true);
 		cookies.ctx.request.headers.cookie = cookie;
@@ -142,9 +148,7 @@ describe('cookies.test.ts', () => {
 		const a = cookies.get('foo', { signed: true });
 
 		expect(a).toBe(undefined);
-		expect(cookies.ctx.response.headers['set-cookie'][0]).toBe(
-			'foo.sig=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; httponly',
-		);
+		expect(getCookies(cookies)[0]).toBe('foo.sig=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; httponly');
 	});
 
 	it('should update .sig if not match the first key', async () => {
@@ -159,7 +163,7 @@ describe('cookies.test.ts', () => {
 			},
 		);
 		cookies.set('foo', 'bar');
-		const cookie = cookies.ctx.response.headers['set-cookie'].join(';');
+		const cookie = getCookies(cookies).join(';');
 
 		const newCookies = await createCookies(
 			{ algorithms: [hi, hello] },
@@ -170,31 +174,29 @@ describe('cookies.test.ts', () => {
 
 		expect(newCookies.get('foo', { signed: true })).toBe('bar');
 		const newSign = newCookies.encrypter?.sign(Buffer.from('foo=bar'));
-		expect(newCookies.ctx.response.headers['set-cookie'][0].startsWith(`foo.sig=${newSign}`));
+		expect(getCookies(newCookies)[0].startsWith(`foo.sig=${newSign}`));
 	});
 
 	it('should not overwrite default', async () => {
 		const cookies = await createCookies({});
 		cookies.set('foo', 'bar');
 		cookies.set('foo', 'hello');
-		expect(cookies.ctx.response.headers['set-cookie'].join(';')).toMatch(/foo=bar/);
+		expect(getCookies(cookies).join(';')).toMatch(/foo=bar/);
 	});
 
 	it('should overwrite when opts.overwrite = true', async () => {
 		const cookies = await createCookies({});
 		cookies.set('foo', 'bar');
 		cookies.set('foo', 'hello', { overwrite: true });
-		expect(cookies.ctx.response.headers['set-cookie'].join(';')).toMatch(/foo=hello/);
+		expect(getCookies(cookies).join(';')).toMatch(/foo=hello/);
 	});
 
 	it('should remove signed cookie ok', async () => {
 		const cookies = await createCookies({});
 		cookies.set('foo', null, { signed: true });
-		expect(cookies.ctx.response.headers['set-cookie'].join(';')).toMatch(
-			/foo=; path=\/; expires=Thu, 01 Jan 1970 00:00:00 GMT; httponly/,
-		);
+		expect(getCookies(cookies).join(';')).toMatch(/foo=; path=\/; expires=Thu, 01 Jan 1970 00:00:00 GMT; httponly/);
 
-		expect(cookies.ctx.response.headers['set-cookie'].join(';')).toMatch(
+		expect(getCookies(cookies).join(';')).toMatch(
 			/foo\.sig=; path=\/; expires=Thu, 01 Jan 1970 00:00:00 GMT; httponly/,
 		);
 	});
@@ -202,19 +204,15 @@ describe('cookies.test.ts', () => {
 	it('should remove encrypt cookie ok', async () => {
 		const cookies = await createCookies({});
 		cookies.set('foo', null, { encrypt: true });
-		expect(cookies.ctx.response.headers['set-cookie'].join(';')).toMatch(
-			/foo=; path=\/; expires=Thu, 01 Jan 1970 00:00:00 GMT; httponly/,
-		);
+		expect(getCookies(cookies).join(';')).toMatch(/foo=; path=\/; expires=Thu, 01 Jan 1970 00:00:00 GMT; httponly/);
 	});
 
 	it('should remove cookie ok event it set maxAge', async () => {
 		const cookies = await createCookies({});
 		cookies.set('foo', null, { signed: true, maxAge: 1200 });
-		expect(cookies.ctx.response.headers['set-cookie'].join(';')).toMatch(
-			/foo=; path=\/; expires=Thu, 01 Jan 1970 00:00:00 GMT; httponly/,
-		);
+		expect(getCookies(cookies).join(';')).toMatch(/foo=; path=\/; expires=Thu, 01 Jan 1970 00:00:00 GMT; httponly/);
 
-		expect(cookies.ctx.response.headers['set-cookie'].join(';')).toMatch(
+		expect(getCookies(cookies).join(';')).toMatch(
 			/foo\.sig=; path=\/; expires=Thu, 01 Jan 1970 00:00:00 GMT; httponly/,
 		);
 	});
@@ -222,13 +220,17 @@ describe('cookies.test.ts', () => {
 	it('should add secure when ctx.secure = true', async () => {
 		const cookies = await createCookies({ secure: true });
 		cookies.set('foo', 'bar');
-		expect(cookies.ctx.response.headers['set-cookie'].join(';')).toMatch(/secure;/);
+		expect(getCookies(cookies).join(';')).toMatch(/secure;/);
 	});
 
 	it('should not add secure when ctx.secure = true but opt.secure = false', async () => {
 		const cookies = await createCookies({ secure: true });
 		cookies.set('foo', 'bar', { secure: false });
-		expect(!cookies.ctx.response.headers['set-cookie'].join(';').match(/secure;/)).toBe(true);
+		expect(
+			!getCookies(cookies)
+				.join(';')
+				.match(/secure;/),
+		).toBe(true);
 	});
 
 	it('should throw when ctx.secure = false but opt.secure = true', async () => {
@@ -243,9 +245,9 @@ describe('cookies.test.ts', () => {
 		const cookies = await createCookies({});
 		cookies.ctx.response.headers['set-cookie'] = 'foo=bar';
 		cookies.set('foo1', 'bar1');
-		expect(cookies.ctx.response.headers['set-cookie'][0]).toBe('foo=bar');
-		expect(cookies.ctx.response.headers['set-cookie'][1]).toBe('foo1=bar1; path=/; httponly');
-		expect(cookies.ctx.response.headers['set-cookie'][2]).toMatch(/foo1\.sig=/);
+		expect(getCookies(cookies)[0]).toBe('foo=bar');
+		expect(getCookies(cookies)[1]).toBe('foo1=bar1; path=/; httponly');
+		expect(getCookies(cookies)[2]).toMatch(/foo1\.sig=/);
 	});
 
 	it('should not send SameSite=None property on incompatible clients', async () => {
@@ -261,9 +263,9 @@ describe('cookies.test.ts', () => {
 			const cookies = await createCookies({ secure: true }, { headers: { 'user-agent': ua } });
 			cookies.set('foo', 'hello', { signed: true, sameSite: 'None' });
 
-			expect(cookies.ctx.response.headers['set-cookie'].join(';')).toMatch(/foo=hello/);
+			expect(getCookies(cookies).join(';')).toMatch(/foo=hello/);
 
-			for (const str of cookies.ctx.response.headers['set-cookie']) {
+			for (const str of getCookies(cookies)) {
 				expect(str.includes('; path=/; secure; httponly')).toBe(true);
 			}
 		}
@@ -282,8 +284,8 @@ describe('cookies.test.ts', () => {
 
 		cookies.set('foo', 'hello', { signed: true, sameSite: 'None' });
 
-		expect(cookies.ctx.response.headers['set-cookie'].join(';')).toMatch(/foo=hello/);
-		for (const str of cookies.ctx.response.headers['set-cookie']) {
+		expect(getCookies(cookies).join(';')).toMatch(/foo=hello/);
+		for (const str of getCookies(cookies)) {
 			expect(str.includes('; path=/; secure; httponly')).toBe(true);
 		}
 	});
@@ -301,8 +303,8 @@ describe('cookies.test.ts', () => {
 
 		cookies.set('foo', 'hello', { signed: true, sameSite: 'None' });
 
-		expect(cookies.ctx.response.headers['set-cookie'].join(';')).toMatch(/foo=hello/);
-		for (const str of cookies.ctx.response.headers['set-cookie']) {
+		expect(getCookies(cookies).join(';')).toMatch(/foo=hello/);
+		for (const str of getCookies(cookies)) {
 			expect(str.includes('; path=/; samesite=none; secure; httponly')).toBe(true);
 		}
 
@@ -317,8 +319,8 @@ describe('cookies.test.ts', () => {
 		);
 		cookies.set('foo', 'hello', { signed: true, sameSite: 'None' });
 
-		expect(cookies.ctx.response.headers['set-cookie'].join(';')).toMatch(/foo=hello/);
-		for (const str of cookies.ctx.response.headers['set-cookie']) {
+		expect(getCookies(cookies).join(';')).toMatch(/foo=hello/);
+		for (const str of getCookies(cookies)) {
 			expect(str.includes('; path=/; samesite=none; secure; httponly')).toBe(true);
 		}
 	});
@@ -336,8 +338,8 @@ describe('cookies.test.ts', () => {
 
 		cookies.set('foo', 'hello', { signed: true, sameSite: 'None' });
 
-		expect(cookies.ctx.response.headers['set-cookie'].join(';')).toMatch(/foo=hello/);
-		for (const str of cookies.ctx.response.headers['set-cookie']) {
+		expect(getCookies(cookies).join(';')).toMatch(/foo=hello/);
+		for (const str of getCookies(cookies)) {
 			expect(str.includes('; path=/; samesite=none; secure; httponly')).toBe(true);
 		}
 	});
@@ -355,8 +357,8 @@ describe('cookies.test.ts', () => {
 
 		cookies.set('foo', 'hello', { signed: true, sameSite: 'None' });
 
-		expect(cookies.ctx.response.headers['set-cookie'].join(';')).toMatch(/foo=hello/);
-		for (const str of cookies.ctx.response.headers['set-cookie']) {
+		expect(getCookies(cookies).join(';')).toMatch(/foo=hello/);
+		for (const str of getCookies(cookies)) {
 			expect(str.includes('; path=/; httponly')).toBe(true);
 		}
 	});

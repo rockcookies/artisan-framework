@@ -79,7 +79,7 @@ export class ArtisanMultipartProvider implements WebMultipartProvider {
 			const fields: Dictionary = {};
 			const files: Dictionary = {};
 
-			const formParser: Formidable.IncomingForm = new (Formidable.IncomingForm as any)(options);
+			const formParser: any = new (Formidable.IncomingForm as any)(options);
 
 			const clearEvents = () => {
 				for (const clear of eventClearList) {
