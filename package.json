@@ -8,9 +8,7 @@
     "test": "lerna run test",
     "bootstrap": "lerna bootstrap",
     "bump": "lerna publish",
-    "codecov": "lerna run codecov",
-    "lint": "lerna run lint",
-    "lint:fix": "lerna run lint:fix"
+    "codecov": "lerna run codecov"
   },
   "workspaces": [
     "packages/*"
@@ -42,5 +40,11 @@
     "ts-jest": "^27.0.5",
     "ts-node": "^10.3.0",
     "yorkie": "^2.0.0"
+  },
+  "gitHooks": {
+    "pre-commit": "lint-staged"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": "eslint --fix"
   }
 }
