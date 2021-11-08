@@ -27,6 +27,7 @@ import { ArtisanMultipartProvider } from './multipart/artisan-multipart-provider
 import { ArtisanWebSessionProvider, WebSessionProvider } from './session';
 import { ArtisanWebTraceProvider, WebTraceProvider } from './trace';
 import { detectErrorStatus, sendToWormhole } from './utils';
+import { ArtisanWebEjsEngine, ArtisanWebViewProvider, WebViewEngine, WebViewProvider } from './view';
 import {
 	WebContext,
 	WebInitializationProvider,
@@ -70,6 +71,10 @@ const hasWebErrorHandlerOrder = (instance: unknown): instance is WebErrorHandler
 		context.container.registerClass(WebMultipartProvider, ArtisanMultipartProvider);
 		context.container.registerClass(ScheduleTask, ArtisanCleanMultipartTempDirTask);
 
+		// view
+		context.container.registerClass(WebViewProvider, ArtisanWebViewProvider);
+		context.container.registerClass(WebViewEngine, ArtisanWebEjsEngine);
+
 		// onError
 		context.container.registerClass(WebErrorHandler, ArtisanWebErrorHandler);
 	},
@@ -100,6 +105,9 @@ export class ArtisanWebProvider implements WebProvider, OnProviderInit, OnProvid
 
 	@autowired(WebTraceProvider)
 	private _traceProvider: WebTraceProvider;
+
+	@autowired(WebViewProvider)
+	private _viewProvider: WebViewProvider;
 
 	@autowiredAll(WebErrorHandler)
 	private _errorHandlers: WebErrorHandler[];
@@ -303,6 +311,14 @@ export class ArtisanWebProvider implements WebProvider, OnProviderInit, OnProvid
 					get() {
 						return (options: any) => {
 							return web._multipartProvider.resolveMultipartForm(this, options);
+						};
+					},
+				},
+
+				render: {
+					get() {
+						return (file: string, data?: Dictionary) => {
+							return web._viewProvider.render(this, file, data);
 						};
 					},
 				},

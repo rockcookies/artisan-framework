@@ -39,7 +39,8 @@ const crypt = (cipher: crypto.Cipher | crypto.Decipher, data: Buffer): Buffer =>
 	},
 })
 export class ArtisanEncryptionProvider
-	implements EncryptionProvider, OnProviderInit, OnProviderDestroy, ProviderInitOrder, Namable {
+	implements EncryptionProvider, OnProviderInit, OnProviderDestroy, ProviderInitOrder, Namable
+{
 	private _algorithms: Array<Required<EncryptionAlgorithm>> = [];
 
 	@autowired(LoggerProvider)

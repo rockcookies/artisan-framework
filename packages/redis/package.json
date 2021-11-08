@@ -40,7 +40,7 @@
   "gitHead": "a280578a5d8997b840053a7afef088e64a9153dc",
   "dependencies": {
     "@artisan-framework/core": "^0.2.1",
-    "@types/ioredis": "^4.27.7",
+    "@types/ioredis": "^4.28.1",
     "@types/redlock": "^4.0.2",
     "ioredis": "^4.28.0",
     "redlock": "^4.2.0"

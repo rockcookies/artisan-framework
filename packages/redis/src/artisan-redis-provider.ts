@@ -26,7 +26,8 @@ import { ArtisanRedisTemplate, RedisTemplate } from './template';
 	},
 })
 export class ArtisanRedisProvider
-	implements RedisProvider, OnProviderInit, OnProviderDestroy, ProviderInitOrder, Namable {
+	implements RedisProvider, OnProviderInit, OnProviderDestroy, ProviderInitOrder, Namable
+{
 	@autowired(LoggerProvider)
 	public logger: LoggerProvider;
 
@@ -51,20 +52,18 @@ export class ArtisanRedisProvider
 		this.logger.info('[redis] initializing...', { client_keys: entries.map(([key]) => key) });
 
 		const clients = await Promise.all(
-			entries.map(
-				async ([key, options]): Promise<[string, ArtisanRedis]> => {
-					const client = new ArtisanRedis({
-						name: key,
-						logger: this.logger,
-						logPrefix: entries.length > 1 ? `[redis] client(${key})` : '[redis]',
-						redisOptions: options,
-					});
+			entries.map(async ([key, options]): Promise<[string, ArtisanRedis]> => {
+				const client = new ArtisanRedis({
+					name: key,
+					logger: this.logger,
+					logPrefix: entries.length > 1 ? `[redis] client(${key})` : '[redis]',
+					redisOptions: options,
+				});
 
-					await client.connect();
+				await client.connect();
 
-					return [key, client];
-				},
-			),
+				return [key, client];
+			}),
 		);
 
 		for (const [key, client] of clients) {

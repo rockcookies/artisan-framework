@@ -25,7 +25,8 @@ import {
 	},
 })
 export class ArtisanHttpClientProvider
-	implements HttpClientProvider, OnProviderInit, OnProviderDestroy, ProviderInitOrder, Namable {
+	implements HttpClientProvider, OnProviderInit, OnProviderDestroy, ProviderInitOrder, Namable
+{
 	@autowired(LoggerProvider)
 	logger: LoggerProvider;
 

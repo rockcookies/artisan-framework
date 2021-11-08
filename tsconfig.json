@@ -1,10 +1,10 @@
 {
-	"extends": "./tsconfig.build.json",
+  "extends": "./tsconfig.build.json",
 
-	"compilerOptions": {
-		"baseUrl": ".",
-		"paths": {
-			"@artisan-framework/*": ["packages/*/src"]
-		}
-	}
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@artisan-framework/*": ["packages/*/src"]
+    }
+  }
 }

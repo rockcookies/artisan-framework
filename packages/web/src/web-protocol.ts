@@ -8,6 +8,7 @@ import { WebTraceOptions } from './trace';
 import Koa = require('koa');
 import Router = require('@koa/router');
 import { WebMultipartOptions, WebMultipart } from './multipart';
+import { WebViewOptions } from './view/view-protocol';
 
 export const WebProvider = Symbol('Artisan#WebProvider');
 
@@ -41,6 +42,7 @@ export interface WebProviderConfig {
 	session?: WebSessionOptions;
 	trace?: WebTraceOptions;
 	static?: WebStaticOptions;
+	view?: WebViewOptions;
 	onError?: WebOnErrorOptions;
 }
 
@@ -63,6 +65,7 @@ declare module 'koa' {
 		trace: TraceContext;
 		startTime: number;
 		multipart: (options?: WebMultipartOptions) => Promise<WebMultipart>;
+		render: (file: string, data?: Dictionary) => Promise<string>;
 	}
 }
 

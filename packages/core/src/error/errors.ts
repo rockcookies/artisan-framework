@@ -23,7 +23,7 @@ export class ArtisanThrowable<T extends ErrorOptions> extends CustomError {
 
 	public static from<
 		S extends new (...args: any) => InstanceType<typeof ArtisanThrowable>,
-		P extends ConstructorParameters<S>
+		P extends ConstructorParameters<S>,
 	>(this: S, err: Error, ...args: P | undefined[]): InstanceType<S> {
 		// eslint-disable-next-line @typescript-eslint/no-this-alias
 		const ErrorClass = this;

@@ -39,8 +39,8 @@
   },
   "dependencies": {
     "@artisan-framework/core": "^0.2.1",
-    "mysql2": "^2.3.0",
-    "sequelize": "^6.7.0"
+    "mysql2": "^2.3.2",
+    "sequelize": "^6.9.0"
   },
   "gitHead": "a280578a5d8997b840053a7afef088e64a9153dc"
 }
