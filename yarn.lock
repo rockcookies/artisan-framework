@@ -2177,7 +2177,7 @@ acorn-walk@^7.1.1:
   resolved "https://registry.npm.taobao.org/acorn-walk/download/acorn-walk-7.1.1.tgz?cache=0&sync_timestamp=1581612804260&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Facorn-walk%2Fdownload%2Facorn-walk-7.1.1.tgz#345f0dffad5c735e7373d2fec9a1023e6a44b83e"
   integrity sha1-NF8N/61cc15zc9L+yaECPmpEuD4=
 
-acorn-walk@^8.1.1:
+acorn-walk@^8.1.1, acorn-walk@^8.2.0:
   version "8.2.0"
   resolved "https://registry.nlark.com/acorn-walk/download/acorn-walk-8.2.0.tgz?cache=0&other_urls=https%3A%2F%2Fregistry.nlark.com%2Facorn-walk%2Fdownload%2Facorn-walk-8.2.0.tgz#741210f2e2426454508853a2f44d0ab83b7f69c1"
   integrity sha1-dBIQ8uJCZFRQiFOi9E0KuDt/acE=
@@ -2187,10 +2187,10 @@ acorn@^7.1.1:
   resolved "https://registry.npm.taobao.org/acorn/download/acorn-7.3.1.tgz?cache=0&sync_timestamp=1591869432510&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Facorn%2Fdownload%2Facorn-7.3.1.tgz#85010754db53c3fbaf3b9ea3e083aa5c5d147ffd"
   integrity sha1-hQEHVNtTw/uvO56j4IOqXF0Uf/0=
 
-acorn@^8.2.4, acorn@^8.4.1, acorn@^8.5.0:
-  version "8.5.0"
-  resolved "https://registry.nlark.com/acorn/download/acorn-8.5.0.tgz?cache=0&sync_timestamp=1630916517167&other_urls=https%3A%2F%2Fregistry.nlark.com%2Facorn%2Fdownload%2Facorn-8.5.0.tgz#4512ccb99b3698c752591e9bb4472e38ad43cee2"
-  integrity sha1-RRLMuZs2mMdSWR6btEcuOK1DzuI=
+acorn@^8.2.4, acorn@^8.4.1, acorn@^8.5.0, acorn@^8.7.0:
+  version "8.7.0"
+  resolved "https://registry.yarnpkg.com/acorn/-/acorn-8.7.0.tgz#90951fde0f8f09df93549481e5fc141445b791cf"
+  integrity sha512-V/LGr1APy+PXIwKebEWrkZPwoeoF+w1jiOBUmuxuiUIaOHtob8Qc9BTrYo7VuI5fR8tqsy+buA2WFooR5olqvQ==
 
 add-stream@^1.0.0:
   version "1.0.0"
@@ -8530,9 +8530,12 @@ verror@1.10.0:
     extsprintf "^1.2.0"
 
 vm2@^3.9.3:
-  version "3.9.4"
-  resolved "https://registry.npmmirror.com/vm2/download/vm2-3.9.4.tgz?cache=0&sync_timestamp=1634059248554&other_urls=https%3A%2F%2Fregistry.npmmirror.com%2Fvm2%2Fdownload%2Fvm2-3.9.4.tgz#2e118290fefe7bd8ea09ebe2f5faf53730dbddaa"
-  integrity sha1-LhGCkP7+e9jqCevi9fr1NzDb3ao=
+  version "3.9.7"
+  resolved "https://registry.yarnpkg.com/vm2/-/vm2-3.9.7.tgz#bb87aa677c97c61e23a6cb6547e44e990517a6f6"
+  integrity sha512-g/GZ7V0Mlmch3eDVOATvAXr1GsJNg6kQ5PjvYy3HbJMCRn5slNbo/u73Uy7r5yUej1cRa3ZjtoVwcWSQuQ/fow==
+  dependencies:
+    acorn "^8.7.0"
+    acorn-walk "^8.2.0"
 
 w3c-hr-time@^1.0.2:
   version "1.0.2"
