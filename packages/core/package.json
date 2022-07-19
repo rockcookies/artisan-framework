@@ -1,6 +1,6 @@
 {
   "name": "@artisan-framework/core",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "",
   "license": "MIT",
   "main": "build/index.js",
