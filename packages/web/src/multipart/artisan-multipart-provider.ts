@@ -1,4 +1,4 @@
-import { Dictionary, value } from '@artisan-framework/core';
+import { value } from '@artisan-framework/core';
 import { HttpErr400 } from '../error';
 import { WebContext, WebProviderConfig, WEB_PROVIDER_CONFIG_KEY } from '../web-protocol';
 import { WebMultipart, WebMultipartOptions, WebMultipartProvider } from './multipart-protocol';
@@ -16,7 +16,10 @@ const HAS_CONSUMED = Symbol('Context#multipartHasConsumed');
 // https://github.com/node-formidable/formidable
 
 export class ArtisanMultipartProvider implements WebMultipartProvider {
-	private options: Required<Omit<WebMultipartOptions, 'uploadCleanSchedule'>>;
+	private options: Required<
+		Pick<WebMultipartOptions, 'encoding' | 'uploadDir' | 'keepExtensions' | 'maxFieldsSize'>
+	> &
+		Partial<WebMultipartOptions>;
 
 	constructor(
 		@value(WEB_PROVIDER_CONFIG_KEY)
@@ -31,10 +34,9 @@ export class ArtisanMultipartProvider implements WebMultipartProvider {
 			maxFieldsSize: opts.maxFileSize || 2 << 20, // 2mb
 			uploadDir: opts.uploadDir || os.tmpdir(),
 			keepExtensions: opts.keepExtensions != null ? opts.keepExtensions : false,
-			hash: opts.hash != null ? opts.hash : false,
+			hashAlgorithm: opts.hashAlgorithm != null ? opts.hashAlgorithm : false,
 			multiples: opts.multiples != null ? opts.multiples : true,
-			// eslint-disable-next-line @typescript-eslint/no-empty-function
-			onFileBegin: opts.onFileBegin || (() => {}),
+			...opts,
 		};
 	}
 
@@ -68,77 +70,24 @@ export class ArtisanMultipartProvider implements WebMultipartProvider {
 
 		ctx.logger.debug(`[web] upload to: ${uploadDir}`);
 
-		const { onFileBegin, ...options }: Required<Omit<WebMultipartOptions, 'uploadCleanSchedule'>> = {
+		const formParser = Formidable({
 			...this.options,
 			...resolveOptions,
 			uploadDir,
-		};
+		});
 
 		const multipart = await new Promise<WebMultipart>((resolve, reject) => {
-			let eventClearList: Array<() => void> = [];
-			const fields: Dictionary = {};
-			const files: Dictionary = {};
-
-			const formParser: any = new (Formidable.IncomingForm as any)(options);
-
-			const clearEvents = () => {
-				for (const clear of eventClearList) {
-					clear();
+			formParser.parse(ctx.req, (err, fields, files) => {
+				if (err) {
+					reject(err);
+					return;
 				}
 
-				eventClearList = [];
-			};
-
-			Array.from<[string, (...args: any[]) => void]>([
-				[
-					'end',
-					() => {
-						clearEvents();
-						resolve({ fields, files });
-					},
-				],
-				[
-					'error',
-					(err: any) => {
-						clearEvents();
-						reject(err);
-					},
-				],
-				[
-					'field',
-					(field, value) => {
-						if (fields[field]) {
-							if (Array.isArray(fields[field])) {
-								fields[field].push(value);
-							} else {
-								fields[field] = [fields[field], value];
-							}
-						} else {
-							fields[field] = value;
-						}
-					},
-				],
-				[
-					'file',
-					(field, file) => {
-						if (files[field]) {
-							if (Array.isArray(files[field])) {
-								files[field].push(file);
-							} else {
-								files[field] = [files[field], file];
-							}
-						} else {
-							files[field] = file;
-						}
-					},
-				],
-				['fileBegin', onFileBegin],
-			]).forEach(([event, listener]) => {
-				eventClearList.push(() => formParser.off(event, listener));
-				formParser.on(event, listener);
+				resolve({
+					fields,
+					files,
+				});
 			});
-
-			formParser.parse(ctx.req);
 		});
 
 		return multipart;

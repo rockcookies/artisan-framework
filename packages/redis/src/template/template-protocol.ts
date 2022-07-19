@@ -1,26 +1,26 @@
 import { RedisClient } from '../redis-protocol';
-import { ValueType, KeyType } from 'ioredis';
+import { RedisValue, RedisKey } from 'ioredis';
 
 export const RedisTemplate = Symbol('Artisan#RedisTemplate');
 
 export interface RedisTemplate {
 	client: RedisClient;
 
-	get(key: KeyType): Promise<string | null>;
+	get(key: RedisKey): Promise<string | null>;
 
-	pSetNx(key: KeyType, value: ValueType, milliseconds: number): Promise<boolean>;
+	pSetNx(key: RedisKey, value: RedisValue, milliseconds: number): Promise<boolean>;
 
-	setNx(key: KeyType, value: ValueType, seconds: number): Promise<boolean>;
+	setNx(key: RedisKey, value: RedisValue, seconds: number): Promise<boolean>;
 
-	pSetEx(key: KeyType, value: ValueType, milliseconds: number): Promise<void>;
+	pSetEx(key: RedisKey, value: RedisValue, milliseconds: number): Promise<void>;
 
-	setEx(key: KeyType, value: ValueType, seconds: number): Promise<void>;
+	setEx(key: RedisKey, value: RedisValue, seconds: number): Promise<void>;
 
-	incr(key: KeyType, value?: number): Promise<number>;
+	incr(key: RedisKey, value?: number): Promise<number>;
 
-	decr(key: KeyType, value?: number): Promise<number>;
+	decr(key: RedisKey, value?: number): Promise<number>;
 
-	del(keys: KeyType | Array<KeyType>): Promise<number>;
+	del(keys: RedisKey | Array<RedisKey>): Promise<number>;
 
 	flush(): Promise<void>;
 }

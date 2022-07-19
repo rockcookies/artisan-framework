@@ -1,1 +1,0 @@
-# Artisan Framework - Archer extension

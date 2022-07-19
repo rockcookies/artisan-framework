@@ -16,43 +16,40 @@ const err = errorEntryCreator(TAG);
 
 export class NumberCriterion extends Criterion<number> {
 	constructor(protected _options: NumberCriterionOptions = {}) {
-		super(
-			TAG,
-			(value: any, context): ValidateResult<number> => {
-				let num: number | undefined;
+		super(TAG, (value: any, context): ValidateResult<number> => {
+			let num: number | undefined;
 
-				if (typeof value === 'number') {
-					num = value;
-				} else if (context.options.convert) {
-					num = Number(value);
-				}
+			if (typeof value === 'number') {
+				num = value;
+			} else if (context.options.convert) {
+				num = Number(value);
+			}
 
-				const locale: typeof numberLocale = {
-					...numberLocale,
-					..._options.locale,
-				};
+			const locale: typeof numberLocale = {
+				...numberLocale,
+				..._options.locale,
+			};
 
-				const path = context.path || 'object';
+			const path = context.path || 'object';
 
-				if (num == null || isNaN(num)) {
-					return err(locale.type, { path }, value);
-				}
+			if (num == null || isNaN(num)) {
+				return err(locale.type, { path }, value);
+			}
 
-				if (_options.integer && num % 1 !== 0) {
-					return err(locale.integer, { path }, value);
-				}
+			if (_options.integer && num % 1 !== 0) {
+				return err(locale.integer, { path }, value);
+			}
 
-				if (_options.min != null && num < _options.min) {
-					return err(locale.min, { path, min: _options.min }, value);
-				}
+			if (_options.min != null && num < _options.min) {
+				return err(locale.min, { path, min: _options.min }, value);
+			}
 
-				if (_options.max != null && num > _options.max) {
-					return err(locale.max, { path, max: _options.max }, value);
-				}
+			if (_options.max != null && num > _options.max) {
+				return err(locale.max, { path, max: _options.max }, value);
+			}
 
-				return okRes(num);
-			},
-		);
+			return okRes(num);
+		});
 	}
 
 	static create(message?: string): NumberCriterion {

@@ -1,5 +1,3 @@
-import urllib = require('urllib');
-import Agent = require('agentkeepalive');
 import {
 	autowired,
 	LoggerProvider,
@@ -11,14 +9,16 @@ import {
 	value,
 } from '@artisan-framework/core';
 import { URL } from 'url';
+import { HttpClient } from 'urllib';
+import { ClientOptions } from 'urllib/src/esm/HttpClient';
 import {
 	HttpClientProvider,
 	HttpClientProviderConfig,
+	HttpClientResponse,
 	HttpRequestOptions,
 	HTTP_CLIENT_PROVIDER_CONFIG_KEY,
 	HTTP_CLIENT_PROVIDER_INIT_ORDER,
 } from './http-client-protocol';
-
 @provider({
 	register: ({ container }) => {
 		container.registerClass(HttpClientProvider, ArtisanHttpClientProvider);
@@ -33,7 +33,7 @@ export class ArtisanHttpClientProvider
 	@value(HTTP_CLIENT_PROVIDER_CONFIG_KEY)
 	_config?: HttpClientProviderConfig;
 
-	_client: urllib.HttpClient;
+	_client: HttpClient;
 
 	name(): string {
 		return 'artisan-http-client';
@@ -45,37 +45,15 @@ export class ArtisanHttpClientProvider
 
 	async onProviderInit(): Promise<void> {
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		const { httpAgent = true, httpsAgent = true, sendTrace: _sendTrace, ...restOptions } = this._config || {};
+		const { sendTrace: _sendTrace, ...restOptions } = this._config || {};
 
-		const options: urllib.RequestOptions = {
-			timeout: 5000,
+		const options: ClientOptions = {
 			...restOptions,
-			...({ trace: true } as any),
 		};
-
-		if (httpAgent) {
-			options.agent = new Agent({
-				keepAlive: true,
-				freeSocketTimeout: 4000,
-				maxSockets: Number.MAX_SAFE_INTEGER,
-				maxFreeSockets: 256,
-				...(httpAgent !== true ? httpAgent : {}),
-			});
-		}
-
-		if (httpsAgent) {
-			options.httpsAgent = new Agent.HttpsAgent({
-				keepAlive: true,
-				freeSocketTimeout: 4000,
-				maxSockets: Number.MAX_SAFE_INTEGER,
-				maxFreeSockets: 256,
-				...(httpsAgent !== true ? httpsAgent : {}),
-			});
-		}
 
 		this.logger.debug('[http-client] initializing...', { options });
 
-		this._client = urllib.create(options);
+		this._client = new HttpClient(options);
 
 		this.logger.info('[http-client] initialized');
 	}
@@ -84,7 +62,7 @@ export class ArtisanHttpClientProvider
 		this.logger.info('[http-client] destroyed');
 	}
 
-	async request<T = any>(url: string | URL, _options?: HttpRequestOptions): Promise<urllib.HttpClientResponse<T>> {
+	async request(url: string | URL, _options?: HttpRequestOptions): Promise<HttpClientResponse> {
 		const { sendTrace = true } = this._config || {};
 		const { trace, ...restOptions } = _options || {};
 

@@ -16,71 +16,70 @@ interface StringCriterionOptions {
 }
 
 // http://www.regular-expressions.info/email.html
-export const EMAIL_RE = /^[a-z0-9\!\#\$\%\&\'\*\+\/\=\?\^\_\`\{\|\}\~\-]+(?:\.[a-z0-9\!\#\$\%\&\'\*\+\/\=\?\^\_\`\{\|\}\~\-]+)*@(?:[a-z0-9](?:[a-z0-9\-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9\-]*[a-z0-9])?$/i;
+export const EMAIL_RE =
+	/^[a-z0-9\!\#\$\%\&\'\*\+\/\=\?\^\_\`\{\|\}\~\-]+(?:\.[a-z0-9\!\#\$\%\&\'\*\+\/\=\?\^\_\`\{\|\}\~\-]+)*@(?:[a-z0-9](?:[a-z0-9\-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9\-]*[a-z0-9])?$/i;
 
 // https://gist.github.com/dperini/729294
-export const URL_RE = /^(?:(?:(?:https?|ftp):)?\/\/)(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z0-9\u00a1-\uffff][a-z0-9\u00a1-\uffff_-]{0,62})?[a-z0-9\u00a1-\uffff]\.)+(?:[a-z\u00a1-\uffff]{2,}\.?))(?::\d{2,5})?(?:[/?#]\S*)?$/i;
+export const URL_RE =
+	/^(?:(?:(?:https?|ftp):)?\/\/)(?:\S+(?::\S*)?@)?(?:(?!(?:10|127)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z0-9\u00a1-\uffff][a-z0-9\u00a1-\uffff_-]{0,62})?[a-z0-9\u00a1-\uffff]\.)+(?:[a-z\u00a1-\uffff]{2,}\.?))(?::\d{2,5})?(?:[/?#]\S*)?$/i;
 
 const TAG = 'string';
 const err = errorEntryCreator(TAG);
 
 export class StringCriterion extends Criterion<string> {
 	constructor(protected _options: StringCriterionOptions = {}) {
-		super(
-			'string',
-			(value: any, context): ValidateResult<string> => {
-				let str: string | undefined;
+		super('string', (value: any, context): ValidateResult<string> => {
+			let str: string | undefined;
 
-				if (typeof value === 'string') {
-					str = value;
-				} else if (context.options.convert) {
-					str = String(value);
-				}
+			if (typeof value === 'string') {
+				str = value;
+			} else if (context.options.convert) {
+				str = String(value);
+			}
 
-				const locale: typeof stringLocale = {
-					...stringLocale,
-					..._options.locale,
-				};
+			const locale: typeof stringLocale = {
+				...stringLocale,
+				..._options.locale,
+			};
 
-				const path = context.path || 'object';
+			const path = context.path || 'object';
 
-				if (str == null) {
-					return err(locale.type, { path }, value);
-				}
+			if (str == null) {
+				return err(locale.type, { path }, value);
+			}
 
-				if (_options.trim) {
-					str = str.trim();
-				}
+			if (_options.trim) {
+				str = str.trim();
+			}
 
-				const len = str.length;
+			const len = str.length;
 
-				if (_options.length != null && len !== _options.length) {
-					return err(locale.length, { path, length: _options.length }, value);
-				}
+			if (_options.length != null && len !== _options.length) {
+				return err(locale.length, { path, length: _options.length }, value);
+			}
 
-				if (_options.min != null && len < _options.min) {
-					return err(locale.min, { path, min: _options.min }, value);
-				}
+			if (_options.min != null && len < _options.min) {
+				return err(locale.min, { path, min: _options.min }, value);
+			}
 
-				if (_options.max != null && len > _options.max) {
-					return err(locale.max, { path, max: _options.max }, value);
-				}
+			if (_options.max != null && len > _options.max) {
+				return err(locale.max, { path, max: _options.max }, value);
+			}
 
-				if (_options.matches != null && !_options.matches.test(str)) {
-					return err(locale.matches, { path, regex: _options.matches }, value);
-				}
+			if (_options.matches != null && !_options.matches.test(str)) {
+				return err(locale.matches, { path, regex: _options.matches }, value);
+			}
 
-				if (_options.email && !EMAIL_RE.test(str)) {
-					return err(locale.email, { path }, value);
-				}
+			if (_options.email && !EMAIL_RE.test(str)) {
+				return err(locale.email, { path }, value);
+			}
 
-				if (_options.url && !URL_RE.test(str)) {
-					return err(locale.url, { path }, value);
-				}
+			if (_options.url && !URL_RE.test(str)) {
+				return err(locale.url, { path }, value);
+			}
 
-				return okRes(str);
-			},
-		);
+			return okRes(str);
+		});
 	}
 
 	static create(message?: string): StringCriterion {

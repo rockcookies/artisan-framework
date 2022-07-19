@@ -40,35 +40,35 @@ describe('multipart.test.ts', () => {
 		expect(resp.body.fields.names).toEqual(['John', 'Paul']);
 
 		// firstField
-		expect(resp.body.files.firstField.name).toBe('package.json');
-		expect(fs.statSync(resp.body.files.firstField.path)).not.toBe(null);
-		fs.unlinkSync(resp.body.files.firstField.path);
+		expect(resp.body.files.firstField.originalFilename).toBe('package.json');
+		expect(fs.statSync(resp.body.files.firstField.filepath)).not.toBe(null);
+		fs.unlinkSync(resp.body.files.firstField.filepath);
 
 		// secondField
 		expect(resp.body.files.secondField.length).toBe(2);
 
-		const secondFieldNames = resp.body.files.secondField.map((item: any) => item.name);
+		const secondFieldNames = resp.body.files.secondField.map((item: any) => item.originalFilename);
 		expect(secondFieldNames).toContain('tsconfig.json');
 		expect(secondFieldNames).toContain('package.json');
 
-		expect(fs.statSync(resp.body.files.secondField[0].path)).not.toBe(null);
-		expect(fs.statSync(resp.body.files.secondField[1].path)).not.toBe(null);
-		fs.unlinkSync(resp.body.files.secondField[0].path);
-		fs.unlinkSync(resp.body.files.secondField[1].path);
+		expect(fs.statSync(resp.body.files.secondField[0].filepath)).not.toBe(null);
+		expect(fs.statSync(resp.body.files.secondField[1].filepath)).not.toBe(null);
+		fs.unlinkSync(resp.body.files.secondField[0].filepath);
+		fs.unlinkSync(resp.body.files.secondField[1].filepath);
 
 		// thirdField
 		expect(resp.body.files.thirdField.length).toBe(3);
 
-		const thirdFieldNames = resp.body.files.thirdField.map((item: any) => item.name);
+		const thirdFieldNames = resp.body.files.thirdField.map((item: any) => item.originalFilename);
 		expect(thirdFieldNames).toContain('LICENSE');
 		expect(thirdFieldNames).toContain('README.md');
 		expect(thirdFieldNames).toContain('package.json');
 
-		expect(fs.statSync(resp.body.files.thirdField[0].path)).not.toBe(null);
-		expect(fs.statSync(resp.body.files.thirdField[1].path)).not.toBe(null);
-		expect(fs.statSync(resp.body.files.thirdField[2].path)).not.toBe(null);
-		fs.unlinkSync(resp.body.files.thirdField[0].path);
-		fs.unlinkSync(resp.body.files.thirdField[1].path);
-		fs.unlinkSync(resp.body.files.thirdField[2].path);
+		expect(fs.statSync(resp.body.files.thirdField[0].filepath)).not.toBe(null);
+		expect(fs.statSync(resp.body.files.thirdField[1].filepath)).not.toBe(null);
+		expect(fs.statSync(resp.body.files.thirdField[2].filepath)).not.toBe(null);
+		fs.unlinkSync(resp.body.files.thirdField[0].filepath);
+		fs.unlinkSync(resp.body.files.thirdField[1].filepath);
+		fs.unlinkSync(resp.body.files.thirdField[2].filepath);
 	});
 });

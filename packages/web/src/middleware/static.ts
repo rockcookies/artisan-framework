@@ -4,8 +4,6 @@ import { isProd } from '../utils';
 import { WebContext } from '../web-protocol';
 import staticCache = require('koa-static-cache');
 import Koa = require('koa');
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-//@ts-ignore
 import LRU = require('ylru');
 import range = require('koa-range');
 import compose = require('koa-compose');
@@ -33,11 +31,13 @@ export function useStatic(
 	}
 
 	for (const [prefix, _options] of Object.entries(config)) {
+		const dynamicMaxFiles = _options.dynamicMaxFiles || 1000;
+
 		const options: WebFileSystemOptions = {
 			..._options,
 			buffer: _options.buffer != null ? _options.buffer : IS_PROD,
 			dynamic: _options.dynamic !== false,
-			dynamicMaxFiles: _options.dynamicMaxFiles || 1000,
+			dynamicMaxFiles,
 		};
 
 		const staticOptions: staticCache.Options = {
@@ -45,7 +45,7 @@ export function useStatic(
 			prefix,
 			preload: false,
 			...(options.maxAge == null && IS_PROD ? { maxAge: 31536000 } : {}),
-			...(options.dynamic ? { files: new LRU(options.dynamicMaxFiles) } : {}),
+			...(options.dynamic ? { files: new LRU(dynamicMaxFiles) as any } : {}),
 		};
 
 		logger.debug(`[web] starting static serve ${prefix} -> ${options.dir}`);

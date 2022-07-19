@@ -1,6 +1,6 @@
 import { ArtisanException, LoggerProvider } from '@artisan-framework/core';
 import { RedisClient, RedisClientOptions } from './redis-protocol';
-import IORedis = require('ioredis');
+import IORedis from 'ioredis';
 
 interface ArtisanRedisOptions {
 	name: string;

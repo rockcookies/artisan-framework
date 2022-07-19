@@ -132,7 +132,7 @@ export class ArtisanSequelizeSessionManager implements SequelizeTransactionManag
 
 	async countWithOptions<E>(entity: Constructor<E>, options: CountWithOptions): Promise<{ [key: string]: number }> {
 		const model = this._sequelize.getModel(entity);
-		return model.count(this.options(options));
+		return model.count(this.options(options)) as any;
 	}
 
 	async count<E>(entity: Constructor<E>, options: CountOptions): Promise<number> {
@@ -213,7 +213,7 @@ export class ArtisanSequelizeSessionManager implements SequelizeTransactionManag
 	async upsert<E>(entity: Constructor<E>, values: object, options?: UpsertOptions): Promise<boolean | null> {
 		const model = this._sequelize.getModel(entity);
 
-		const result = await model.upsert(values, this.options(options || {}));
+		const result = await model.upsert(values as any, this.options(options || {}));
 		return result[1];
 	}
 
@@ -223,7 +223,7 @@ export class ArtisanSequelizeSessionManager implements SequelizeTransactionManag
 		options?: BulkCreateOptions,
 	): Promise<Array<EntityInstance<E>>> {
 		const model = this._sequelize.getModel(entity);
-		return model.bulkCreate(records, this.options(options || {}));
+		return model.bulkCreate(records as any, this.options(options || {}));
 	}
 
 	async truncate<E>(entity: Constructor<E>, options?: TruncateOptions): Promise<void> {

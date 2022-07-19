@@ -1,6 +1,6 @@
 import {
 	autowired,
-	autowiredAll,
+	DependencyContainer,
 	LoggerProvider,
 	Namable,
 	OnApplicationBootstrap,
@@ -19,8 +19,8 @@ export class ArtisanScheduleProvider implements ScheduleProvider, OnApplicationB
 	@autowired(LoggerProvider)
 	logger: LoggerProvider;
 
-	@autowiredAll({ token: ScheduleTask, optional: true })
-	_tasks?: ScheduleTask[];
+	@autowired(DependencyContainer)
+	private container: DependencyContainer;
 
 	_runners: ArtisanScheduleRunner[] = [];
 
@@ -29,7 +29,7 @@ export class ArtisanScheduleProvider implements ScheduleProvider, OnApplicationB
 	}
 
 	async onApplicationBootstrap(): Promise<void> {
-		const tasks = this._tasks || [];
+		const tasks = this.container.resolveAll<ScheduleTask>(ScheduleTask) || [];
 
 		this.logger.info('[schedule] bootstrapping...', { task_size: tasks.length });
 

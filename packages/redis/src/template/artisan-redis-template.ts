@@ -1,4 +1,4 @@
-import { KeyType, ValueType } from 'ioredis';
+import { RedisKey, RedisValue } from 'ioredis';
 import { ArtisanRedis } from '../artisan-redis';
 import { RedisClient } from '../redis-protocol';
 import { RedisTemplate } from './template-protocol';
@@ -10,42 +10,42 @@ export class ArtisanRedisTemplate implements RedisTemplate {
 		this.client = redis.client;
 	}
 
-	async get(key: KeyType): Promise<string | null> {
+	async get(key: RedisKey): Promise<string | null> {
 		const rs = await this.client.get(key);
 		return rs;
 	}
 
-	async pSetNx(key: KeyType, value: ValueType, milliseconds: number): Promise<boolean> {
+	async pSetNx(key: RedisKey, value: RedisValue, milliseconds: number): Promise<boolean> {
 		// > 2.6.12
-		const rs = await this.client.set(key, value, 'px', milliseconds, 'nx');
+		const rs = await this.client.set(key, value, 'PX', milliseconds, 'NX');
 		return rs === 'OK';
 	}
 
-	async setNx(key: KeyType, value: ValueType, seconds: number): Promise<boolean> {
+	async setNx(key: RedisKey, value: RedisValue, seconds: number): Promise<boolean> {
 		// > 2.6.12
-		const rs = await this.client.set(key, value, 'ex', seconds, 'nx');
+		const rs = await this.client.set(key, value, 'EX', seconds, 'NX');
 		return rs === 'OK';
 	}
 
-	async setEx(key: KeyType, value: ValueType, seconds: number): Promise<void> {
+	async setEx(key: RedisKey, value: RedisValue, seconds: number): Promise<void> {
 		await this.client.setex(key, seconds, value);
 	}
 
-	async pSetEx(key: KeyType, value: ValueType, milliseconds: number): Promise<void> {
+	async pSetEx(key: RedisKey, value: RedisValue, milliseconds: number): Promise<void> {
 		await this.client.psetex(key, milliseconds, value);
 	}
 
-	async incr(key: KeyType, value = 1): Promise<number> {
+	async incr(key: RedisKey, value = 1): Promise<number> {
 		const rs = await this.client.incrby(key, value);
 		return rs;
 	}
 
-	async decr(key: KeyType, value = 1): Promise<number> {
+	async decr(key: RedisKey, value = 1): Promise<number> {
 		const rs = await this.client.decrby(key, value);
 		return rs;
 	}
 
-	async del(_keys: KeyType | Array<KeyType>): Promise<number> {
+	async del(_keys: RedisKey | Array<RedisKey>): Promise<number> {
 		const keys = Array.isArray(_keys) ? _keys : [_keys];
 		let rs = 0;
 
