@@ -1,9 +1,7 @@
 import { TraceContext } from '@artisan-framework/core';
 import { HttpOptions } from 'agentkeepalive';
 import { URL } from 'url';
-import { ClientOptions } from 'urllib/src/esm/HttpClient';
-import { RequestOptions } from 'urllib/src/esm/Request';
-import { HttpClientResponse as UrllibRespose } from 'urllib/src/esm/Response';
+import { HttpClientResponse as _HttpClientResponse, RequestOptions } from 'urllib';
 
 export const HTTP_CLIENT_PROVIDER_CONFIG_KEY = 'artisan.httpClient';
 
@@ -16,7 +14,7 @@ interface SendTraceOptions {
 	traceSpanIdHeaderField?: string;
 }
 
-export interface HttpClientProviderConfig extends ClientOptions {
+export interface HttpClientProviderConfig extends Omit<RequestOptions, 'agent' | 'httpsAgent'> {
 	httpAgent?: HttpOptions | boolean;
 	httpsAgent?: HttpOptions | boolean;
 	sendTrace?: SendTraceOptions | boolean;
@@ -26,9 +24,9 @@ export interface HttpRequestOptions extends RequestOptions {
 	trace?: TraceContext;
 }
 
-export type HttpClientResponse = UrllibRespose;
+export type HttpClientResponse<T = any> = _HttpClientResponse<T>;
 
 export interface HttpClientProvider {
 	/** request */
-	request(url: string | URL, options?: HttpRequestOptions): Promise<HttpClientResponse>;
+	request<T = any>(url: string | URL, options?: HttpRequestOptions): Promise<HttpClientResponse<T>>;
 }
