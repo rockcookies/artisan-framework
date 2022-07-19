@@ -1,6 +1,6 @@
 {
   "name": "@artisan-framework/core",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "",
   "license": "MIT",
   "main": "build/index.js",
@@ -41,5 +41,5 @@
     "reflect-metadata": "^0.1.13",
     "ts-custom-error": "^3.2.0"
   },
-  "gitHead": "f02d14dd3dba9d50eb24b89d0d7fb1ac1b67bc7b"
+  "gitHead": "10070ac9f307f4e5540c94d4f76462d58dea5b0c"
 }
