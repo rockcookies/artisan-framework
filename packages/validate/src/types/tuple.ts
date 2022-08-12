@@ -17,59 +17,56 @@ const TAG = 'tuple';
 const err = errorEntryCreator(TAG);
 
 export class TupleCriterion<
-	T extends [CriterionMixed, ...CriterionMixed[]] | [] = [CriterionMixed, ...CriterionMixed[]]
+	T extends [CriterionMixed, ...CriterionMixed[]] | [] = [CriterionMixed, ...CriterionMixed[]],
 > extends Criterion<TupleStatic<T>> {
 	constructor(protected _options: TupleCriterionOptions = {}) {
-		super(
-			TAG,
-			(value: any, context): ValidateResult<TupleStatic<T>> => {
-				const path = context.path || 'object';
-				const { abortEarly } = context.options;
+		super(TAG, (value: any, context): ValidateResult<TupleStatic<T>> => {
+			const path = context.path || 'object';
+			const { abortEarly } = context.options;
 
-				const locale: typeof tupleLocale = {
-					...tupleLocale,
-					..._options.locale,
-				};
+			const locale: typeof tupleLocale = {
+				...tupleLocale,
+				..._options.locale,
+			};
 
-				const items = _options.items || [];
+			const items = _options.items || [];
 
-				if (!Array.isArray(value) || value.length !== items.length) {
-					return err(locale.type, { path, length: items.length }, value);
-				}
+			if (!Array.isArray(value) || value.length !== items.length) {
+				return err(locale.type, { path, length: items.length }, value);
+			}
 
-				let changed = false;
-				const newValue: any = [];
-				const errors: ValidateErrorEntry[] = [];
+			let changed = false;
+			const newValue: any = [];
+			const errors: ValidateErrorEntry[] = [];
 
-				for (let i = 0; i < items.length; i++) {
-					const itemValue = value[i];
-					const itemResult = items[i].check(itemValue, {
-						...context,
-						path: `${path}[${i}]`,
-					});
+			for (let i = 0; i < items.length; i++) {
+				const itemValue = value[i];
+				const itemResult = items[i].check(itemValue, {
+					...context,
+					path: `${path}[${i}]`,
+				});
 
-					if (itemResult.isError) {
-						errors.push(itemResult.error);
+				if (itemResult.isError) {
+					errors.push(itemResult.error);
 
-						if (abortEarly) {
-							break;
-						}
-					} else if (errors.length <= 0) {
-						newValue.push(itemResult.value);
+					if (abortEarly) {
+						break;
+					}
+				} else if (errors.length <= 0) {
+					newValue.push(itemResult.value);
 
-						if (!changed && itemResult.value !== itemValue) {
-							changed = true;
-						}
+					if (!changed && itemResult.value !== itemValue) {
+						changed = true;
 					}
 				}
+			}
 
-				if (errors.length > 0) {
-					return err(locale.items, { path }, value, errors);
-				} else {
-					return okRes(changed ? newValue : value);
-				}
-			},
-		);
+			if (errors.length > 0) {
+				return err(locale.items, { path }, value, errors);
+			} else {
+				return okRes(changed ? newValue : value);
+			}
+		});
 	}
 
 	locale(locale: Partial<typeof tupleLocale>): TupleCriterion<T> {

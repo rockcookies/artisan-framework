@@ -48,6 +48,9 @@ export class ArtisanHttpClientProvider
 		const { httpAgent = true, httpsAgent = true, sendTrace: _sendTrace, ...restOptions } = this._config || {};
 
 		const options: urllib.RequestOptions = {
+			enableDNSCache: false,
+			dnsCacheLookupInterval: 10000,
+			dnsCacheMaxLength: 1000,
 			timeout: 5000,
 			...restOptions,
 			...({ trace: true } as any),

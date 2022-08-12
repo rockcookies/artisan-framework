@@ -26,7 +26,8 @@ import { ArtisanSequelizeSessionManager, SequelizeSessionManager } from './sessi
 	},
 })
 export class ArtisanSequelizeProvider
-	implements SequelizeProvider, OnProviderInit, OnProviderDestroy, ProviderInitOrder, Namable {
+	implements SequelizeProvider, OnProviderInit, OnProviderDestroy, ProviderInitOrder, Namable
+{
 	@autowired(LoggerProvider)
 	logger: LoggerProvider;
 

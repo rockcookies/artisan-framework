@@ -113,14 +113,19 @@ export class Cookies implements WebCookies {
 	}
 
 	private isSameSiteNoneCompatible(userAgent: string): boolean {
-		const m = /Chrom[^ \/]+\/(\d+)[\.\d]* /.exec(userAgent);
-
-		if (!m) {
-			return isSameSiteNoneCompatible(userAgent);
-		}
-
-		return parseInt(m[1]) >= 80;
+		// Chrome >= 80.0.0.0
+		const result = parseChromiumAndMajorVersion(userAgent);
+		if (result.chromium) return (result as any).majorVersion >= 80;
+		return isSameSiteNoneCompatible(userAgent);
 	}
+}
+
+// https://github.com/linsight/should-send-same-site-none/blob/master/index.js#L86
+function parseChromiumAndMajorVersion(userAgent: string) {
+	const m = /Chrom[^ \/]{1,100}\/(\d{1,100}?)\./.exec(userAgent);
+	if (!m) return { chromium: false, version: null };
+	// Extract digits from first capturing group.
+	return { chromium: true, majorVersion: parseInt(m[1]) };
 }
 
 function computeSigned(opts: WebCookiesGetOptions) {

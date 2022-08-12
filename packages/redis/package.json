@@ -33,7 +33,7 @@
     "prepublishOnly": "npm run clean && npm run compile"
   },
   "devDependencies": {
-    "@types/node": "^18.0.6",
+    "@types/node": "^18.7.1",
     "rimraf": "^3.0.2",
     "typescript": "^4.7.4"
   },
@@ -42,7 +42,7 @@
     "@artisan-framework/core": "^0.2.6",
     "@types/ioredis": "^4.28.10",
     "@types/redlock": "^4.0.3",
-    "ioredis": "^5.2.1",
+    "ioredis": "^5.2.2",
     "redlock": "^4.2.0"
   }
 }

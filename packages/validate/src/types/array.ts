@@ -17,72 +17,69 @@ const err = errorEntryCreator(TAG);
 
 export class ArrayCriterion<T extends CriterionMixed = CriterionMixed> extends Criterion<Array<CriterionStatic<T>>> {
 	protected constructor(protected _options: ArrayCriterionOptions = {}) {
-		super(
-			TAG,
-			(value: any, context): ValidateResult<Array<CriterionStatic<T>>> => {
-				const path = context.path || 'object';
-				const { abortEarly } = context.options;
+		super(TAG, (value: any, context): ValidateResult<Array<CriterionStatic<T>>> => {
+			const path = context.path || 'object';
+			const { abortEarly } = context.options;
 
-				const locale: typeof arrayLocale = {
-					...arrayLocale,
-					..._options.locale,
-				};
+			const locale: typeof arrayLocale = {
+				...arrayLocale,
+				..._options.locale,
+			};
 
-				if (!Array.isArray(value)) {
-					return err(locale.type, { path }, value);
-				}
+			if (!Array.isArray(value)) {
+				return err(locale.type, { path }, value);
+			}
 
-				const len = value.length;
+			const len = value.length;
 
-				if (_options.length != null && len !== _options.length) {
-					return err(locale.length, { path, length: _options.length }, value);
-				}
+			if (_options.length != null && len !== _options.length) {
+				return err(locale.length, { path, length: _options.length }, value);
+			}
 
-				if (_options.min != null && len < _options.min) {
-					return err(locale.min, { path, min: _options.min }, value);
-				}
+			if (_options.min != null && len < _options.min) {
+				return err(locale.min, { path, min: _options.min }, value);
+			}
 
-				if (_options.max != null && len > _options.max) {
-					return err(locale.max, { path, max: _options.max }, value);
-				}
+			if (_options.max != null && len > _options.max) {
+				return err(locale.max, { path, max: _options.max }, value);
+			}
 
-				if (!_options.items) {
-					return okRes(value);
-				}
+			if (!_options.items) {
+				return okRes(value);
+			}
 
-				let changed = false;
-				const newValue: any[] = [];
-				const errors: ValidateErrorEntry[] = [];
+			let changed = false;
+			const newValue: any[] = [];
+			const errors: ValidateErrorEntry[] = [];
 
-				for (let i = 0; i < len; i++) {
-					const itemValue = value[i];
-					const itemResult = _options.items.check(itemValue, {
-						...context,
-						path: `${path}[${i}]`,
-					});
+			for (let i = 0; i < len; i++) {
+				const itemValue = value[i];
+				const itemResult = _options.items.check(itemValue, {
+					...context,
+					path: `${path}[${i}]`,
+				});
 
-					if (itemResult.isError) {
-						errors.push(itemResult.error);
+				if (itemResult.isError) {
+					errors.push(itemResult.error);
 
-						if (abortEarly) {
-							break;
-						}
-					} else if (errors.length <= 0) {
-						newValue.push(itemResult.value);
+					if (abortEarly) {
+						break;
+					}
+				} else if (errors.length <= 0) {
+					newValue.push(itemResult.value);
 
-						if (!changed && itemResult.value !== itemValue) {
-							changed = true;
-						}
+					if (!changed && itemResult.value !== itemValue) {
+						changed = true;
 					}
 				}
+			}
 
-				if (errors.length > 0) {
-					return err(locale.items, { path }, value, errors);
-				} else {
-					return okRes(changed ? newValue : value);
-				}
-			},
-		);
+			if (errors.length > 0) {
+				return err(locale.items, { path }, value, errors);
+			} else {
+				return okRes(changed ? newValue : value);
+			}
+		});
 	}
 
 	static create(message?: string): ArrayCriterion {

@@ -2,7 +2,7 @@ import { ArtisanException, LoggerProvider, TraceContext, createTraceContext } fr
 import { parseExpression } from 'cron-parser';
 import { ScheduleOptions, ScheduleTask } from './schedule-protocol';
 import safeTimers = require('safe-timers');
-import ms = require('humanize-ms');
+import ms = require('ms');
 import dayJs = require('dayjs');
 
 export class ArtisanScheduleRunner {
@@ -119,7 +119,17 @@ export class ArtisanScheduleRunner {
 		let delay: number | undefined;
 
 		if (this._schedule.interval) {
-			delay = ms(this._schedule.interval);
+			const { interval } = this._schedule;
+
+			if (typeof interval === 'number') {
+				delay = interval;
+			} else {
+				delay = ms(interval);
+
+				if (delay == null) {
+					this._logger.warn(`[schedule] get next interval undefined for task<${this._name}>`);
+				}
+			}
 		} else if (this._cronExpression) {
 			// calculate next cron tick
 			const now = Date.now();

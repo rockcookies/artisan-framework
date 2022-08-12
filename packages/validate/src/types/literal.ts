@@ -13,28 +13,25 @@ const literalErr = errorEntryCreator(literalTag);
 
 export class LiteralCriterion<T extends boolean | number | string | null | undefined> extends Criterion<T> {
 	constructor(protected _literal: T, protected _options: LiteralCriterionOptions = {}) {
-		super(
-			literalTag,
-			(value, context): ValidateResult<T> => {
-				if (value === _literal) {
-					return okRes(value);
-				}
+		super(literalTag, (value, context): ValidateResult<T> => {
+			if (value === _literal) {
+				return okRes(value);
+			}
 
-				const locale: typeof literalLocale = {
-					...literalLocale,
-					..._options.locale,
-				};
+			const locale: typeof literalLocale = {
+				...literalLocale,
+				..._options.locale,
+			};
 
-				return literalErr(
-					locale.type,
-					{
-						path: context.path || 'object',
-						target: typeof _literal === 'string' ? `'${_literal}'` : String(_literal),
-					},
-					value,
-				);
-			},
-		);
+			return literalErr(
+				locale.type,
+				{
+					path: context.path || 'object',
+					target: typeof _literal === 'string' ? `'${_literal}'` : String(_literal),
+				},
+				value,
+			);
+		});
 	}
 
 	static create<T extends boolean | number | string | null | undefined>(
@@ -59,21 +56,18 @@ const nullErr = errorEntryCreator(nullTag);
 
 export class NullCriterion extends Criterion<null> {
 	constructor(protected _options: LiteralCriterionOptions = {}) {
-		super(
-			nullTag,
-			(value, context): ValidateResult<null> => {
-				if (value === null) {
-					return okRes(value);
-				}
+		super(nullTag, (value, context): ValidateResult<null> => {
+			if (value === null) {
+				return okRes(value);
+			}
 
-				const locale: typeof literalLocale = {
-					...literalLocale,
-					..._options.locale,
-				};
+			const locale: typeof literalLocale = {
+				...literalLocale,
+				..._options.locale,
+			};
 
-				return nullErr(locale.type, { path: context.path || 'object', target: 'null' }, value);
-			},
-		);
+			return nullErr(locale.type, { path: context.path || 'object', target: 'null' }, value);
+		});
 	}
 
 	static create(message?: string): NullCriterion {
@@ -95,21 +89,18 @@ const undefinedErr = errorEntryCreator(undefinedTag);
 
 export class UndefinedCriterion extends Criterion<undefined> {
 	constructor(protected _options: LiteralCriterionOptions = {}) {
-		super(
-			undefinedTag,
-			(value, context): ValidateResult<undefined> => {
-				if (value === undefined) {
-					return okRes(value);
-				}
+		super(undefinedTag, (value, context): ValidateResult<undefined> => {
+			if (value === undefined) {
+				return okRes(value);
+			}
 
-				const locale: typeof literalLocale = {
-					...literalLocale,
-					..._options.locale,
-				};
+			const locale: typeof literalLocale = {
+				...literalLocale,
+				..._options.locale,
+			};
 
-				return undefinedErr(locale.type, { path: context.path || 'object', target: 'undefined' }, value);
-			},
-		);
+			return undefinedErr(locale.type, { path: context.path || 'object', target: 'undefined' }, value);
+		});
 	}
 
 	static create(message?: string): UndefinedCriterion {
@@ -131,28 +122,25 @@ const voidErr = errorEntryCreator(voidTag);
 
 export class VoidCriterion extends Criterion<null | undefined> {
 	constructor(protected _options: LiteralCriterionOptions = {}) {
-		super(
-			voidTag,
-			(value: any, context): ValidateResult<null | undefined> => {
-				if (value === null || value === undefined) {
-					return okRes(value);
-				}
+		super(voidTag, (value: any, context): ValidateResult<null | undefined> => {
+			if (value === null || value === undefined) {
+				return okRes(value);
+			}
 
-				const locale: typeof literalLocale = {
-					...literalLocale,
-					..._options.locale,
-				};
+			const locale: typeof literalLocale = {
+				...literalLocale,
+				..._options.locale,
+			};
 
-				return voidErr(
-					locale.type,
-					{
-						path: context.path || 'object',
-						target: 'null | undefined',
-					},
-					value,
-				);
-			},
-		);
+			return voidErr(
+				locale.type,
+				{
+					path: context.path || 'object',
+					target: 'null | undefined',
+				},
+				value,
+			);
+		});
 	}
 
 	static create(message?: string): VoidCriterion {

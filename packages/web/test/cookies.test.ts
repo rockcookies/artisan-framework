@@ -6,7 +6,6 @@ import {
 	NoopLoggerProvider,
 } from '@artisan-framework/core';
 import { ArtisanEncryptionProvider, EncryptionAlgorithm, EncryptionProvider } from '@artisan-framework/crypto';
-import { createMockContext, Options } from '@shopify/jest-koa-mocks';
 import { Cookies, WebCookiesSetOptions } from '../src/cookies';
 import crypto = require('crypto');
 
@@ -18,10 +17,13 @@ describe('cookies.test.ts', () => {
 
 	const _encryptionAlgorithms = [createAlgorithm(), createAlgorithm()];
 
-	const createCookies = async (
-		{ algorithms, ...options }: WebCookiesSetOptions & { algorithms?: EncryptionAlgorithm[] | false },
-		opts?: Options<Dictionary>,
-	): Promise<Cookies> => {
+	const createCookies = async ({
+		algorithms,
+		...options
+	}: WebCookiesSetOptions & {
+		headers?: Dictionary;
+		algorithms?: EncryptionAlgorithm[] | false;
+	}): Promise<Cookies> => {
 		const context = new ArtisanApplicationContext({ logger: new NoopLoggerProvider() });
 
 		context.useProvider(ArtisanEncryptionProvider);
@@ -43,10 +45,27 @@ describe('cookies.test.ts', () => {
 
 		const encryption = context.container.resolve<EncryptionProvider>(EncryptionProvider);
 
-		const ctx = createMockContext({
-			url: options.secure ? 'https://abc.com' : 'http://abc.com',
-			...opts,
-		});
+		const reqHeaders: Dictionary = options.headers || {};
+		const respHeaders: Dictionary = {};
+
+		const ctx: any = {
+			secure: options.secure,
+			request: {
+				headers: reqHeaders,
+				get: (key: string) => reqHeaders[key],
+			},
+			response: {
+				headers: respHeaders,
+				get: (key: string) => respHeaders[key],
+				set: (key: string, value: any) => {
+					respHeaders[key] = value;
+				},
+			},
+			get: (key: string) => reqHeaders[key],
+			set: (key: string, value: any) => {
+				respHeaders[key] = value;
+			},
+		};
 
 		return new Cookies(ctx, algorithms === false ? undefined : encryption);
 	};
@@ -85,7 +104,7 @@ describe('cookies.test.ts', () => {
 		const cookies = await createCookies({});
 		cookies.set('foo', 'bar', { encrypt: true });
 		const cookie = getCookies(cookies)[0];
-		const newCookies = await createCookies({ algorithms: [createAlgorithm()] }, { headers: { cookie } });
+		const newCookies = await createCookies({ algorithms: [createAlgorithm()], headers: { cookie } });
 		const value = newCookies.get('foo', { encrypt: true });
 		expect(value).toBe(undefined);
 	});
@@ -132,19 +151,19 @@ describe('cookies.test.ts', () => {
 	});
 
 	it('should return undefined when cookie not exists', async () => {
-		const cookies = await createCookies({}, { headers: { cookie: 'foo=bar' } });
+		const cookies = await createCookies({ headers: { cookie: 'foo=bar' } });
 		expect(cookies.get('hello')).toBe(undefined);
 	});
 
 	it('should return undefined when signed and name.sig not exists', async () => {
-		const cookies = await createCookies({}, { headers: { cookie: 'foo=bar;' } });
+		const cookies = await createCookies({ headers: { cookie: 'foo=bar;' } });
 		expect(cookies.get('foo', { signed: true })).toBe(undefined);
 		expect(cookies.get('foo', { signed: false })).toBe('bar');
 		expect(cookies.get('foo')).toBe(undefined);
 	});
 
 	it('should set .sig to null if not match', async () => {
-		const cookies = await createCookies({}, { headers: { cookie: 'foo=bar;foo.sig=bar.sig;' } });
+		const cookies = await createCookies({ headers: { cookie: 'foo=bar;foo.sig=bar.sig;' } });
 		const a = cookies.get('foo', { signed: true });
 
 		expect(a).toBe(undefined);
@@ -156,21 +175,14 @@ describe('cookies.test.ts', () => {
 		const world = createAlgorithm();
 		const hi = createAlgorithm();
 
-		const cookies = await createCookies(
-			{ algorithms: [hello, world] },
-			{
-				headers: { cookie: 'foo=bar;foo.sig=bar.sig;' },
-			},
-		);
+		const cookies = await createCookies({
+			algorithms: [hello, world],
+			headers: { 'set-cookie': 'foo=bar;foo.sig=bar.sig;' },
+		});
 		cookies.set('foo', 'bar');
 		const cookie = getCookies(cookies).join(';');
 
-		const newCookies = await createCookies(
-			{ algorithms: [hi, hello] },
-			{
-				headers: { cookie },
-			},
-		);
+		const newCookies = await createCookies({ algorithms: [hi, hello], headers: { cookie } });
 
 		expect(newCookies.get('foo', { signed: true })).toBe('bar');
 		const newSign = newCookies.encrypter?.sign(Buffer.from('foo=bar'));
@@ -245,6 +257,7 @@ describe('cookies.test.ts', () => {
 		const cookies = await createCookies({});
 		cookies.ctx.response.headers['set-cookie'] = 'foo=bar';
 		cookies.set('foo1', 'bar1');
+
 		expect(getCookies(cookies)[0]).toBe('foo=bar');
 		expect(getCookies(cookies)[1]).toBe('foo1=bar1; path=/; httponly');
 		expect(getCookies(cookies)[2]).toMatch(/foo1\.sig=/);
@@ -260,7 +273,7 @@ describe('cookies.test.ts', () => {
 			'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML%2C like Gecko) Chrome/52.0.2723.2 Safari/537.36',
 		];
 		for (const ua of userAgents) {
-			const cookies = await createCookies({ secure: true }, { headers: { 'user-agent': ua } });
+			const cookies = await createCookies({ secure: true, headers: { 'user-agent': ua } });
 			cookies.set('foo', 'hello', { signed: true, sameSite: 'None' });
 
 			expect(getCookies(cookies).join(';')).toMatch(/foo=hello/);
@@ -272,15 +285,13 @@ describe('cookies.test.ts', () => {
 	});
 
 	it('should send not SameSite=None property on Chrome < 80', async () => {
-		const cookies = await createCookies(
-			{ secure: true },
-			{
-				headers: {
-					'user-agent':
-						'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.29 Safari/537.36',
-				},
+		const cookies = await createCookies({
+			secure: true,
+			headers: {
+				'user-agent':
+					'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.29 Safari/537.36',
 			},
-		);
+		});
 
 		cookies.set('foo', 'hello', { signed: true, sameSite: 'None' });
 
@@ -291,15 +302,13 @@ describe('cookies.test.ts', () => {
 	});
 
 	it('should send not SameSite=None property on Chrome >= 80', async () => {
-		let cookies = await createCookies(
-			{ secure: true },
-			{
-				headers: {
-					'user-agent':
-						'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3945.29 Safari/537.36',
-				},
+		let cookies = await createCookies({
+			secure: true,
+			headers: {
+				'user-agent':
+					'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3945.29 Safari/537.36',
 			},
-		);
+		});
 
 		cookies.set('foo', 'hello', { signed: true, sameSite: 'None' });
 
@@ -308,15 +317,13 @@ describe('cookies.test.ts', () => {
 			expect(str.includes('; path=/; samesite=none; secure; httponly')).toBe(true);
 		}
 
-		cookies = await createCookies(
-			{ secure: true },
-			{
-				headers: {
-					'user-agent':
-						'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.3945.29 Safari/537.36',
-				},
+		cookies = await createCookies({
+			secure: true,
+			headers: {
+				'user-agent':
+					'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.3945.29 Safari/537.36',
 			},
-		);
+		});
 		cookies.set('foo', 'hello', { signed: true, sameSite: 'None' });
 
 		expect(getCookies(cookies).join(';')).toMatch(/foo=hello/);
@@ -326,15 +333,13 @@ describe('cookies.test.ts', () => {
 	});
 
 	it('should send SameSite=none property on compatible clients', async () => {
-		const cookies = await createCookies(
-			{ secure: true },
-			{
-				headers: {
-					'user-agent':
-						'Mozilla/5.0 (iPhone; CPU iPhone OS 13_0 like Mac OS X) AppleWebKit/602.1.38 (KHTML, like Gecko) Version/66.6 Mobile/14A5297c Safari/602.1',
-				},
+		const cookies = await createCookies({
+			secure: true,
+			headers: {
+				'user-agent':
+					'Mozilla/5.0 (iPhone; CPU iPhone OS 13_0 like Mac OS X) AppleWebKit/602.1.38 (KHTML, like Gecko) Version/66.6 Mobile/14A5297c Safari/602.1',
 			},
-		);
+		});
 
 		cookies.set('foo', 'hello', { signed: true, sameSite: 'None' });
 
@@ -345,15 +350,13 @@ describe('cookies.test.ts', () => {
 	});
 
 	it('should not send SameSite=none property on non-secure context', async () => {
-		const cookies = await createCookies(
-			{ secure: false },
-			{
-				headers: {
-					'user-agent':
-						'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.3945.29 Safari/537.36',
-				},
+		const cookies = await createCookies({
+			secure: false,
+			headers: {
+				'user-agent':
+					'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.3945.29 Safari/537.36',
 			},
-		);
+		});
 
 		cookies.set('foo', 'hello', { signed: true, sameSite: 'None' });
 

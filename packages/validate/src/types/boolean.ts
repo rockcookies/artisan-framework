@@ -13,26 +13,23 @@ const err = errorEntryCreator(TAG);
 
 export class BooleanCriterion extends Criterion<boolean> {
 	constructor(protected _options: BooleanCriterionOptions = {}) {
-		super(
-			TAG,
-			(value: any, context): ValidateResult<boolean> => {
-				let bool: boolean | undefined;
+		super(TAG, (value: any, context): ValidateResult<boolean> => {
+			let bool: boolean | undefined;
 
-				const locale: typeof booleanLocale = {
-					...booleanLocale,
-					..._options.locale,
-				};
+			const locale: typeof booleanLocale = {
+				...booleanLocale,
+				..._options.locale,
+			};
 
-				if (typeof value === 'boolean') {
-					bool = value;
-				} else if (context.options.convert) {
-					bool = !!value;
-				}
+			if (typeof value === 'boolean') {
+				bool = value;
+			} else if (context.options.convert) {
+				bool = !!value;
+			}
 
-				const path = context.path || 'object';
-				return bool != null ? okRes(bool) : err(locale.type, { path }, value);
-			},
-		);
+			const path = context.path || 'object';
+			return bool != null ? okRes(bool) : err(locale.type, { path }, value);
+		});
 	}
 
 	static create(message?: string): BooleanCriterion {

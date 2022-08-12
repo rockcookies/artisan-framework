@@ -15,82 +15,79 @@ const err = errorEntryCreator(TAG);
 
 export class ObjectCriterion<T extends CriterionShape = CriterionShape> extends Criterion<CriterionShapeStatic<T>> {
 	constructor(protected _options: ObjectCriterionOptions = {}) {
-		super(
-			TAG,
-			(value: any, context): ValidateResult<CriterionShapeStatic<T>> => {
-				const path = context.path || 'object';
-				const { abortEarly } = context.options;
+		super(TAG, (value: any, context): ValidateResult<CriterionShapeStatic<T>> => {
+			const path = context.path || 'object';
+			const { abortEarly } = context.options;
 
-				const locale: typeof objectLocale = {
-					...objectLocale,
-					..._options.locale,
-				};
+			const locale: typeof objectLocale = {
+				...objectLocale,
+				..._options.locale,
+			};
 
-				if (typeof value !== 'object' || !value) {
-					return err(locale.type, { path }, value);
-				}
+			if (typeof value !== 'object' || !value) {
+				return err(locale.type, { path }, value);
+			}
 
-				const shape = _options.shape;
-				if (!shape) {
-					return okRes(value);
-				}
+			const shape = _options.shape;
+			if (!shape) {
+				return okRes(value);
+			}
 
-				const convert = context.options.convert;
-				const strict = _options.strict === undefined ? true : _options.strict;
-				const shapeKeys = Object.keys(shape);
-				const valueKeys = Object.keys(value);
-				const unknownKeys = valueKeys.filter((key) => !shapeKeys.includes(key));
+			const convert = context.options.convert;
+			const strict = _options.strict === undefined ? true : _options.strict;
+			const shapeKeys = Object.keys(shape);
+			const valueKeys = Object.keys(value);
+			const unknownKeys = valueKeys.filter((key) => !shapeKeys.includes(key));
 
-				if (!convert && strict && unknownKeys.length > 0) {
-					return err(locale.strict, { path }, value);
-				}
+			if (!convert && strict && unknownKeys.length > 0) {
+				return err(locale.strict, { path }, value);
+			}
 
-				let changed = false;
-				const newValue: any = {};
-				const errors: ValidateErrorEntry[] = [];
+			let changed = false;
+			const newValue: any = {};
+			const errors: ValidateErrorEntry[] = [];
 
-				for (const key of shapeKeys) {
-					const fieldValue = value[key];
-					const fieldResult = shape[key].check(fieldValue, {
-						...context,
-						path: `${path}[${key}]`,
-					});
+			for (const key of shapeKeys) {
+				const fieldValue = value[key];
+				const fieldResult = shape[key].check(fieldValue, {
+					...context,
+					path: `${path}[${key}]`,
+				});
 
-					if (fieldResult.isError) {
-						errors.push(fieldResult.error);
+				if (fieldResult.isError) {
+					errors.push(fieldResult.error);
 
-						if (abortEarly) {
-							break;
-						}
-					} else if (errors.length <= 0) {
-						newValue[key] = fieldResult.value;
+					if (abortEarly) {
+						break;
+					}
+				} else if (errors.length <= 0) {
+					newValue[key] = fieldResult.value;
 
-						if (!changed && fieldResult.value !== fieldValue) {
-							changed = true;
-						}
+					if (!changed && fieldResult.value !== fieldValue) {
+						changed = true;
 					}
 				}
+			}
 
-				// error
-				if (errors.length > 0) {
-					return err(locale.shape, { path }, value, errors);
+			// error
+			if (errors.length > 0) {
+				return err(locale.shape, { path }, value, errors);
+			}
+
+			// convert
+			if (convert) {
+				return okRes(changed || unknownKeys.length > 0 ? newValue : value);
+			}
+
+			// unknown keys
+			if (!strict && unknownKeys.length > 0 && changed) {
+				for (const key of unknownKeys) {
+					newValue[key] = value[key];
 				}
+			}
 
-				// convert
-				if (convert) {
-					return okRes(changed || unknownKeys.length > 0 ? newValue : value);
-				}
-
-				// unknown keys
-				if (!strict && unknownKeys.length > 0 && changed) {
-					for (const key of unknownKeys) {
-						newValue[key] = value[key];
-					}
-				}
-
-				return okRes(changed ? newValue : value);
-			},
-		);
+			return okRes(changed ? newValue : value);
+		});
 	}
 
 	static create<P extends CriterionShape>(message?: string): ObjectCriterion<P> {

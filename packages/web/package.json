@@ -33,7 +33,6 @@
     "prepublishOnly": "npm run clean && npm run compile"
   },
   "devDependencies": {
-    "@shopify/jest-koa-mocks": "^3.0.5",
     "@types/supertest": "^2.0.12",
     "rimraf": "^3.0.2",
     "supertest": "^6.2.4",

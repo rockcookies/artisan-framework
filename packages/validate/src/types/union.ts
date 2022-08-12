@@ -14,37 +14,34 @@ const TAG = 'union';
 const err = errorEntryCreator(TAG);
 
 export class UnionCriterion<
-	T extends [CriterionMixed, ...CriterionMixed[]] | [] = [CriterionMixed, ...CriterionMixed[]]
+	T extends [CriterionMixed, ...CriterionMixed[]] | [] = [CriterionMixed, ...CriterionMixed[]],
 > extends Criterion<UnionStatic<T>> {
 	constructor(protected _alternatives: T, protected _options: TupleCriterionOptions = {}) {
-		super(
-			TAG,
-			(value, context): ValidateResult<UnionStatic<T>> => {
-				const path = context.path || 'object';
+		super(TAG, (value, context): ValidateResult<UnionStatic<T>> => {
+			const path = context.path || 'object';
 
-				const locale: typeof unionLocale = {
-					...unionLocale,
-					..._options.locale,
-				};
+			const locale: typeof unionLocale = {
+				...unionLocale,
+				..._options.locale,
+			};
 
-				const errors: ValidateErrorEntry[] = [];
+			const errors: ValidateErrorEntry[] = [];
 
-				for (let i = 0; i < _alternatives.length; i++) {
-					const result = _alternatives[i].check(value, {
-						...context,
-						path,
-					});
+			for (let i = 0; i < _alternatives.length; i++) {
+				const result = _alternatives[i].check(value, {
+					...context,
+					path,
+				});
 
-					if (result.isError) {
-						errors.push(result.error);
-					} else {
-						return okRes(result.value);
-					}
+				if (result.isError) {
+					errors.push(result.error);
+				} else {
+					return okRes(result.value);
 				}
+			}
 
-				return err(locale.type, { path }, value, errors);
-			},
-		);
+			return err(locale.type, { path }, value, errors);
+		});
 	}
 
 	locale(locale: Partial<typeof unionLocale>): UnionCriterion<T> {

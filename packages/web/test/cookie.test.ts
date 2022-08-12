@@ -4,7 +4,6 @@ describe('cookie.test.ts', () => {
 	it('create cookies contains invalid string error should throw', () => {
 		expect(() => new Cookie('中文', 'value')).toThrow('argument name is invalid');
 		expect(() => new Cookie('name', '中文')).toThrow('argument value is invalid');
-
 		expect(() => new Cookie('name', 'value', { path: '中文' })).toThrow('argument option path is invalid');
 		expect(() => new Cookie('name', 'value', { domain: '中文' })).toThrow('argument option domain is invalid');
 	});
@@ -13,18 +12,14 @@ describe('cookie.test.ts', () => {
 		expect(new Cookie('name', null).attrs.expires?.getTime()).toBe(0);
 	});
 
-	it('set expires to 0 if value not present', () => {
-		expect(new Cookie('name', null).attrs.expires?.getTime()).toBe(0);
-	});
-
 	describe('toString()', () => {
-		it('return name=vaule', () => {
+		it('return name=value', () => {
 			expect(new Cookie('name', 'value').toString()).toBe('name=value');
 		});
 	});
 
 	describe('toHeader()', () => {
-		it('return name=vaule;params', () => {
+		it('return name=value;params', () => {
 			expect(
 				new Cookie('name', 'value', {
 					secure: true,
@@ -32,8 +27,17 @@ describe('cookie.test.ts', () => {
 					domain: 'eggjs.org',
 					path: '/',
 					httpOnly: true,
-				}).toHeader(),
-			).toMatch(/^name=value; path=\/; max-age=1; expires=(.*?)GMT; domain=eggjs\.org; secure; httponly$/);
+				})
+					.toHeader()
+					.match(/^name=value; path=\/; max-age=1; expires=(.*?)GMT; domain=eggjs\.org; secure; httponly$/),
+			);
+		});
+
+		it('donnot set path when set path to null', () => {
+			const header = new Cookie('name', 'value', {
+				path: undefined,
+			}).toHeader();
+			expect(!header.match(/path=/));
 		});
 
 		it('donnot set httponly when set httpOnly to false', () => {
@@ -63,7 +67,32 @@ describe('cookie.test.ts', () => {
 				path: '/',
 				httpOnly: true,
 			}).toHeader();
-			expect(!header.match(/expires=Wed, 01 Jan 2020 00:00:00 GMT/)).toBe(true);
+			expect(!header.match(/expires=Wed, 01 Jan 2020 00:00:00 GMT/));
+		});
+
+		it('ignore maxage NaN', () => {
+			const header = new Cookie('name', 'value', {
+				secure: true,
+				maxAge: 'session' as any,
+				domain: 'eggjs.org',
+				path: '/',
+				httpOnly: true,
+			}).toHeader();
+			expect(!header.includes('max-age'));
+			expect(!header.includes('expires'));
+		});
+
+		it('ignore maxage 0', () => {
+			// In previous implementations, maxAge = 0 was considered unnecessary to set this header
+			const header = new Cookie('name', 'value', {
+				secure: true,
+				maxAge: 0,
+				domain: 'eggjs.org',
+				path: '/',
+				httpOnly: true,
+			}).toHeader();
+			expect(!header.includes('max-age'));
+			expect(!header.includes('expires'));
 		});
 	});
 
@@ -77,6 +106,18 @@ describe('cookie.test.ts', () => {
 			expect(() => {
 				new Cookie('foo', 'bar', { sameSite: 'foo' });
 			}).toThrow(/argument option sameSite is invalid/);
+		});
+
+		describe('when set to falsy values', () => {
+			it('should not add "samesite" attribute in header', () => {
+				const falsyValues = [false, 0, '', null, undefined, NaN];
+
+				falsyValues.forEach((falsy) => {
+					const cookie = new Cookie('foo', 'bar', { sameSite: falsy as any });
+					expect(cookie.attrs.sameSite).toBe(falsy);
+					expect(cookie.toHeader()).toBe('foo=bar; path=/; httponly');
+				});
+			});
 		});
 
 		describe('when set to "true"', () => {
