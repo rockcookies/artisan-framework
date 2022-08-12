@@ -1,6 +1,6 @@
 {
   "name": "@artisan-framework/schedule",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "",
   "license": "MIT",
   "main": "build/index.js",
@@ -39,7 +39,7 @@
   },
   "gitHead": "10070ac9f307f4e5540c94d4f76462d58dea5b0c",
   "dependencies": {
-    "@artisan-framework/core": "^0.2.6",
+    "@artisan-framework/core": "^0.2.7",
     "@types/humanize-ms": "^1.2.2",
     "@types/safe-timers": "^1.1.0",
     "cron-parser": "^4.6.0",
