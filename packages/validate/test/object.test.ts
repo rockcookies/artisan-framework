@@ -10,7 +10,10 @@ describe('object.test.ts', () => {
 		expect(r2.isError === false && r2.value).toBe(i2);
 
 		const r3 = V.object().shape({ a: V.number() }).decode({ a: '1' }, { convert: true });
-		expect(r3.isError === false && r3.value).toStrictEqual({ a: 1 });
+		expect(!r3.isError && r3.value).toStrictEqual({ a: 1 });
+
+		const r4 = V.object().shape({ a: V.string().trim() }).decode({}, { convert: true });
+		expect(r4.isError).toBe(true);
 	});
 
 	it('should check error', () => {

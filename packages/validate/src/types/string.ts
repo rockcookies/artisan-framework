@@ -33,7 +33,7 @@ export class StringCriterion extends Criterion<string> {
 
 			if (typeof value === 'string') {
 				str = value;
-			} else if (context.options.convert) {
+			} else if (context.options.convert && value != null) {
 				str = String(value);
 			}
 
