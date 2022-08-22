@@ -1,14 +1,15 @@
-import { ErrorOptions, Dictionary } from '@artisan-framework/core';
+import { ArtisanErrorOptions, Dictionary } from '@artisan-framework/core';
 import { WebContext } from '../web-protocol';
 
 export const WebErrorHandler = Symbol('Artisan:WebErrorHandler');
 
 export const DEFAULT_WEB_ERROR_HANDLE_ORDER = 10000;
 
-export interface HttpErrorOptions extends ErrorOptions {
+export interface HttpErrorOptions extends ArtisanErrorOptions {
 	status: number;
 	headers?: Dictionary;
 	exposed?: boolean;
+	message?: string;
 }
 
 export interface WebOnErrorOptions {

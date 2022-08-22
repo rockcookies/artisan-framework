@@ -1,83 +1,71 @@
-import { CustomError } from 'ts-custom-error';
+/* eslint-disable @typescript-eslint/ban-types */
 
-const TYPE: symbol = Symbol.for('ArtisanError#type');
-
-enum ErrorType {
-	BUILTIN = 'BUILTIN',
-	ERROR = 'ERROR',
-	EXCEPTION = 'EXCEPTION',
+export interface ArtisanErrorOptions {
+	cause?: any;
 }
 
-export interface ErrorOptions {
-	code?: string;
-	message: string;
-	[key: string]: any;
+// thanks for: https://github.com/adriengibrat/ts-custom-error
+
+/**
+ * Fix the prototype chain of the error
+ *
+ * Use Object.setPrototypeOf
+ * Support ES6 environments
+ *
+ * Fallback setting __proto__
+ * Support IE11+, see https://docs.microsoft.com/en-us/scripting/javascript/reference/javascript-version-information
+ */
+function fixProto(target: Error, prototype: {}) {
+	const setPrototypeOf: Function = (Object as any).setPrototypeOf;
+	setPrototypeOf ? setPrototypeOf(target, prototype) : ((target as any).__proto__ = prototype);
 }
 
-export class ArtisanThrowable<T extends ErrorOptions> extends CustomError {
-	[key: string]: any;
-
-	public static getType(err: Error): string {
-		return (err as any)[TYPE] || ErrorType.BUILTIN;
-	}
-
-	public static from<
-		S extends new (...args: any) => InstanceType<typeof ArtisanThrowable>,
-		P extends ConstructorParameters<S>,
-	>(this: S, err: Error, ...args: P | undefined[]): InstanceType<S> {
-		// eslint-disable-next-line @typescript-eslint/no-this-alias
-		const ErrorClass = this;
-		const newErr = new ErrorClass(...(args as any[]));
-		newErr.message = err.message;
-		newErr.stack = err.stack;
-		for (const key of Object.keys(err)) {
-			newErr[key] = (err as any)[key];
-		}
-		return newErr as InstanceType<S>;
-	}
-
-	public code: string;
-	protected options?: T;
-
-	constructor(options?: T) {
-		super(options?.message || '');
-		this.options = options || ({} as T);
-		this.code = this.options.code || '';
-	}
+/**
+ * Capture and fix the error stack when available
+ *
+ * Use Error.captureStackTrace
+ * Support v8 environments
+ */
+function fixStack(target: Error, fn: Function = target.constructor) {
+	const captureStackTrace: Function = (Error as any).captureStackTrace;
+	captureStackTrace && captureStackTrace(target, fn);
 }
 
-export class ArtisanBaseException<T extends ErrorOptions> extends ArtisanThrowable<T> {
-	constructor(options?: T) {
-		super(options);
+export class ArtisanThrowable extends Error {
+	cause: any;
 
-		(this as any)[TYPE] = ErrorType.EXCEPTION;
+	constructor(message: string, options?: ArtisanErrorOptions) {
+		super(message);
+		this.cause = options?.cause;
+
+		// set error name as constructor name, make it not enumerable to keep native Error behavior
+		// see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/new.target#new.target_in_constructors
+		// see https://github.com/adriengibrat/ts-custom-error/issues/30
+		Object.defineProperty(this, 'name', {
+			value: new.target.name,
+			enumerable: false,
+			configurable: true,
+		});
+
+		// fix the extended error prototype chain
+		// because typescript __extends implementation can't
+		// see https://github.com/Microsoft/TypeScript-wiki/blob/master/Breaking-Changes.md#extending-built-ins-like-error-array-and-map-may-no-longer-work
+		fixProto(this, new.target.prototype);
+		// try to remove contructor from stack trace
+		fixStack(this);
 	}
 }
 
 /** ArtisanException is system error. */
-export class ArtisanException extends ArtisanBaseException<ErrorOptions> {
-	constructor(message?: string) {
-		super({
-			code: 'ARTISAN_EXCEPTION',
-			message: message || '',
-		});
-	}
-}
-
-export class ArtisanBaseError<T extends ErrorOptions> extends ArtisanThrowable<T> {
-	constructor(options?: T) {
-		super(options);
-
-		(this as any)[TYPE] = ErrorType.ERROR;
+export class ArtisanException extends ArtisanThrowable {
+	constructor(message: string, options?: ArtisanErrorOptions) {
+		super(message, options);
 	}
 }
 
 /** ArtisanError is business error. */
-export class ArtisanError extends ArtisanBaseError<ErrorOptions> {
-	constructor(message?: string) {
-		super({
-			code: 'ARTISAN_ERROR',
-			message: message || '',
-		});
+export class ArtisanError extends ArtisanThrowable {
+	constructor(message: string, options?: ArtisanErrorOptions) {
+		super(message, options);
 	}
 }
