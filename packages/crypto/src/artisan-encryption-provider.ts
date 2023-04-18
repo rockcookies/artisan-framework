@@ -77,22 +77,31 @@ export class ArtisanEncryptionProvider
 	}
 
 	encrypt(data: Buffer | string): Buffer {
-		const { cipher: algorithm, key, iv } = this._getAlgorithms()[0];
+		const { cipher: algorithm, key } = this._getAlgorithms()[0];
 
+		const iv = crypto.randomBytes(16);
 		const cipher = crypto.createCipheriv(algorithm, key, iv);
-		return crypt(cipher, this._convertToBuffer(data));
+
+		const text = cipher.update(data);
+		const pad = cipher.final();
+
+		return Buffer.concat([iv, text, pad]);
 	}
 
 	decrypt(data: Buffer | string): Buffer | false {
+		const buf = this._convertToBuffer(data);
+		const iv = buf.subarray(0, 16);
+		const content = buf.subarray(16);
+
 		const algorithms = this._getAlgorithms();
 		const length = algorithms.length;
 
 		for (let i = 0; i < length; i++) {
-			const { cipher: algorithm, key, iv } = algorithms[i];
+			const { cipher: algorithm, key } = algorithms[i];
 
 			try {
 				const decipher = crypto.createDecipheriv(algorithm, key, iv);
-				return crypt(decipher, this._convertToBuffer(data));
+				return crypt(decipher, content);
 			} catch (err) {
 				this.logger.debug(`[encryption] decrypt data error at #${i}, length: ${length}`, {
 					error: err,

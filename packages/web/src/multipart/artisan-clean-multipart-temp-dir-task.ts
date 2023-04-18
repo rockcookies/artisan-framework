@@ -23,10 +23,10 @@ export class ArtisanCleanMultipartTempDirTask implements ScheduleTask {
 	}
 
 	async task(ctx: ScheduleContext): Promise<void> {
-		const logger = this.logger.with({ trace: ctx.trace });
+		const logger = this.logger.with({ task_id: ctx.id, task_name: this.name() });
 		const uploadDir = path.join(this.config?.multipart?.uploadDir || os.tmpdir(), 'artisan-uploads');
 
-		logger.info(`[web] start clean multipart tmpdir: ${uploadDir}`);
+		logger.info(`start clean multipart tmpdir: ${uploadDir}`);
 
 		const lastYearDir = path.join(uploadDir, dayJs().subtract(1, 'year').format('YYYY'));
 		await this._remove(lastYearDir, logger);
@@ -43,7 +43,7 @@ export class ArtisanCleanMultipartTempDirTask implements ScheduleTask {
 			await this._remove(dir, logger);
 		}
 
-		logger.info(`[web] clean multipart tmpdir: ${uploadDir} end`);
+		logger.info(`clean multipart tmpdir: ${uploadDir} end`);
 	}
 
 	async _remove(dir: string, logger: LoggerProvider) {
@@ -53,13 +53,13 @@ export class ArtisanCleanMultipartTempDirTask implements ScheduleTask {
 			return;
 		}
 
-		logger.info(`[web] removing multipart tmpdir: ${dir}`);
+		logger.info(`removing multipart tmpdir: ${dir}`);
 
 		try {
 			await fse.remove(dir);
-			logger.info(`[web] multipart tmpdir: ${dir} has been removed`);
+			logger.info(`multipart tmpdir: ${dir} has been removed`);
 		} catch (err) {
-			logger.error(`[web] remove multipart tmpdir: ${dir} error: ${err}`, { err });
+			logger.error(`remove multipart tmpdir: ${dir} error: ${err}`, { err });
 		}
 	}
 }

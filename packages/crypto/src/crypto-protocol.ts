@@ -5,10 +5,7 @@ export const ENCRYPTION_PROVIDER_CONFIG_KEY = 'artisan.encryption';
 export const ENCRYPTION_PROVIDER_INIT_ORDER = 1000;
 
 export interface EncryptionAlgorithm {
-	/** Must be 256 bits (32 characters) */
 	key: string;
-	/** Must be 128 bits (16 characters) */
-	iv: string;
 	/** default is sha256 */
 	hmac?: string;
 	/** default is aes-256-cbc */

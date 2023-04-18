@@ -19,13 +19,9 @@ import { Cookies } from './cookies';
 import { ArtisanWebErrorHandler, DEFAULT_WEB_ERROR_HANDLE_ORDER, WebErrorHandler, WebErrorHandlerOrder } from './error';
 import { useMeta } from './middleware/meta';
 import { useNotFound } from './middleware/not-found';
-import { useSession } from './middleware/session';
 import { useStatic } from './middleware/static';
-import { useTrace } from './middleware/trace';
 import { ArtisanCleanMultipartTempDirTask, WebMultipartProvider } from './multipart';
 import { ArtisanMultipartProvider } from './multipart/artisan-multipart-provider';
-import { ArtisanWebSessionProvider, WebSessionProvider } from './session';
-import { ArtisanWebTraceProvider, WebTraceProvider } from './trace';
 import { detectErrorStatus, sendToWormhole } from './utils';
 import { ArtisanWebEjsEngine, ArtisanWebViewProvider, WebViewEngine, WebViewProvider } from './view';
 import {
@@ -43,8 +39,9 @@ import KoaBodyParser = require('koa-bodyparser');
 
 const ArtisanLogger = Symbol('Artisan#Logger');
 const ArtisanCookies = Symbol('Artisan#Cookies');
-const ArtisanSession = Symbol('Artisan#Session');
 const ArtisanContainer = Symbol('Artisan#Container');
+
+const NAMESPACE = 'artisan-web';
 
 const ROUTER_PROXY_METHODS = ['head', 'options', 'get', 'put', 'patch', 'post', 'delete', 'del', 'all'];
 
@@ -60,12 +57,6 @@ const hasWebErrorHandlerOrder = (instance: unknown): instance is WebErrorHandler
 
 		// web
 		context.container.registerClass(WebProvider, ArtisanWebProvider);
-
-		// session
-		context.container.registerClass(WebSessionProvider, ArtisanWebSessionProvider);
-
-		// trace
-		context.container.registerClass(WebTraceProvider, ArtisanWebTraceProvider);
 
 		// multipart
 		context.container.registerClass(WebMultipartProvider, ArtisanMultipartProvider);
@@ -85,8 +76,11 @@ export class ArtisanWebProvider implements WebProvider, OnProviderInit, OnProvid
 
 	protected _terminator?: HttpTerminator;
 
-	@autowired(LoggerProvider)
-	public logger: LoggerProvider;
+	logger: LoggerProvider;
+
+	constructor(@autowired(LoggerProvider) _logger: LoggerProvider) {
+		this.logger = _logger.tag(NAMESPACE);
+	}
 
 	@value(WEB_PROVIDER_CONFIG_KEY)
 	private _config?: WebProviderConfig;
@@ -97,14 +91,8 @@ export class ArtisanWebProvider implements WebProvider, OnProviderInit, OnProvid
 	@autowired(EncryptionProvider)
 	private _encryptionProvider: EncryptionProvider;
 
-	@autowired(WebSessionProvider)
-	private _sessionProvider: WebSessionProvider;
-
 	@autowired(WebMultipartProvider)
 	private _multipartProvider: WebMultipartProvider;
-
-	@autowired(WebTraceProvider)
-	private _traceProvider: WebTraceProvider;
 
 	@autowired(WebViewProvider)
 	private _viewProvider: WebViewProvider;
@@ -116,7 +104,7 @@ export class ArtisanWebProvider implements WebProvider, OnProviderInit, OnProvid
 	private _initializationProvider?: WebInitializationProvider;
 
 	name(): string {
-		return 'artisan-web';
+		return NAMESPACE;
 	}
 
 	providerInitOrder(): number {
@@ -128,16 +116,16 @@ export class ArtisanWebProvider implements WebProvider, OnProviderInit, OnProvid
 
 		// 初始化，不执行 listen 操作
 		if (config.manual) {
-			this.logger.info('[web] initializing...', { manual: true });
+			this.logger.info('initializing...', { manual: true });
 
 			await this.setup();
 
-			this.logger.info('[web] initialized');
+			this.logger.info('initialized');
 		} else {
 			const port = config.port || 4001;
 			const hostname = config.hostname || '0.0.0.0';
 
-			this.logger.info('[web] initializing...', { port, hostname });
+			this.logger.info('initializing...', { port, hostname });
 
 			await this.setup();
 
@@ -147,18 +135,18 @@ export class ArtisanWebProvider implements WebProvider, OnProviderInit, OnProvid
 				server,
 			});
 
-			this.logger.info(`[web] initialized on: ${hostname}:${port}`);
+			this.logger.info(`initialized on: ${hostname}:${port}`);
 		}
 	}
 
 	async onProviderDestroy(): Promise<void> {
-		this.logger.info('[web] destroying...');
+		this.logger.info('destroying...');
 
 		if (this._terminator) {
 			await this._terminator.terminate();
 		}
 
-		this.logger.info('[web] destroyed');
+		this.logger.info('destroyed');
 	}
 
 	async setup() {
@@ -194,12 +182,6 @@ export class ArtisanWebProvider implements WebProvider, OnProviderInit, OnProvid
 
 		// body
 		this.server.use(KoaBodyParser(config.body));
-
-		// trace
-		this.server.use(useTrace(this._traceProvider, config.trace));
-
-		// session
-		this.server.use(useSession(this._sessionProvider, ArtisanSession));
 
 		// error handler
 		((web, handlers) => {
@@ -362,17 +344,6 @@ export class ArtisanWebProvider implements WebProvider, OnProviderInit, OnProvid
 						return this[ArtisanCookies];
 					},
 				},
-
-				session: {
-					get() {
-						if (this[ArtisanSession]) {
-							return this[ArtisanSession];
-						}
-
-						this[ArtisanSession] = web._sessionProvider.create(this);
-						return this[ArtisanSession];
-					},
-				},
 			});
 		})(this);
 	}
@@ -426,9 +397,9 @@ export class ArtisanWebProvider implements WebProvider, OnProviderInit, OnProvid
 		const status = detectErrorStatus(err);
 
 		if (status >= 500) {
-			this.logger.error(`[web] received error: ${err}`, { err, context });
+			this.logger.error(`received error: ${err}`, { err, context });
 		} else {
-			this.logger.warn(`[web] received error: ${err}`, { err: context });
+			this.logger.warn(`received error: ${err}`, { err: context });
 		}
 	}
 }

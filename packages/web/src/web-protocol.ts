@@ -1,10 +1,8 @@
-import { DependencyContainer, Dictionary, LoggerProvider, TraceContext } from '@artisan-framework/core';
+import { DependencyContainer, Dictionary, LoggerProvider } from '@artisan-framework/core';
 import { Options as BodyParserOptions } from 'koa-bodyparser';
 import { WebCookies } from './cookies';
 import { WebOnErrorOptions } from './error';
-import { WebSession, WebSessionOptions } from './session';
 import { WebStaticOptions } from './static';
-import { WebTraceOptions } from './trace';
 import Koa = require('koa');
 import Router = require('@koa/router');
 import { WebMultipartOptions, WebMultipart } from './multipart';
@@ -39,8 +37,6 @@ export interface WebProviderConfig {
 	body?: BodyParserOptions;
 	multipart?: WebMultipartOptions;
 	router?: Router.RouterOptions;
-	session?: WebSessionOptions;
-	trace?: WebTraceOptions;
 	static?: WebStaticOptions;
 	view?: WebViewOptions;
 	onError?: WebOnErrorOptions;
@@ -53,7 +49,7 @@ export interface WebRouter<StateT = any, CustomT = {}> extends Router<StateT, Cu
 
 declare module 'koa' {
 	interface Request extends Koa.BaseRequest {
-		body?: any;
+		body?: unknown;
 		rawBody: string;
 	}
 
@@ -61,9 +57,7 @@ declare module 'koa' {
 		container: DependencyContainer;
 		logger: LoggerProvider;
 		cookies: WebCookies;
-		session: WebSession;
-		trace: TraceContext;
-		startTime: number;
+		performanceStartTime: number;
 		multipart: (options?: WebMultipartOptions) => Promise<WebMultipart>;
 		render: (file: string, data?: Dictionary) => Promise<string>;
 	}

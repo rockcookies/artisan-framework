@@ -1,14 +1,24 @@
 import { WebContext } from './web-protocol';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-//@ts-ignore
-import _sendToWormhole = require('stream-wormhole');
+import { Writable as WritableStream, Readable as ReadableStream, pipeline as _pipeline } from 'node:stream';
+import util = require('util');
 
-export async function sendToWormhole(stream: any, throwError?: boolean): Promise<void> {
+const pipeline = util.promisify(_pipeline);
+
+export async function sendToWormhole(stream: ReadableStream): Promise<void> {
 	if (!stream) {
 		return;
 	}
 
-	return await _sendToWormhole(stream, throwError);
+	try {
+		await pipeline(
+			stream,
+			new WritableStream({
+				write(chunk, encoding, callback) {
+					setImmediate(callback);
+				},
+			}),
+		);
+	} catch (e) {}
 }
 
 export function isProd(): boolean {
