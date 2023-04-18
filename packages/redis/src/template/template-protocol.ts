@@ -4,7 +4,7 @@ import { RedisValue, RedisKey } from 'ioredis';
 export const RedisTemplate = Symbol('Artisan#RedisTemplate');
 
 export interface RedisTemplate {
-	client: RedisClient;
+	readonly client: RedisClient;
 
 	get(key: RedisKey): Promise<string | null>;
 

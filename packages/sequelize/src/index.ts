@@ -1,3 +1,4 @@
+import * as _sequelize from 'sequelize';
 export {
 	EntityBelongsToManyOptions,
 	EntityHasOneOptions,
@@ -9,6 +10,7 @@ export {
 	hasMany,
 	belongsToMany,
 } from './decorators/association';
+export const sequelize = _sequelize;
 export { ColumnOptions, column } from './decorators/column';
 export { TableOptions, table } from './decorators/table';
 export * from './session';
@@ -23,3 +25,4 @@ export {
 	SequelizeOptions,
 	SequelizeProviderConfig,
 } from './sequelize-protocol';
+export * from './utils';

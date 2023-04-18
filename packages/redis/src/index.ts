@@ -1,7 +1,11 @@
-import _RedisLock = require('redlock');
+import _RedisLock, { Settings } from 'redlock';
+import * as _redlock from 'redlock';
+import * as _ioredis from 'ioredis';
 
 export const RedisLock = _RedisLock;
-export type RedisLockOptions = _RedisLock.Options;
+export type RedisLockOptions = Partial<Settings>;
+export const redlock = _redlock;
+export const ioredis = _ioredis;
 
 export { ArtisanRedis } from './artisan-redis';
 export { ArtisanRedisProvider } from './artisan-redis-provider';

@@ -7,7 +7,6 @@ import {
 	OnProviderInit,
 	provider,
 	ProviderInitOrder,
-	TraceContext,
 	value,
 } from '@artisan-framework/core';
 import { ArtisanRedis } from './artisan-redis';
@@ -20,6 +19,8 @@ import {
 } from './redis-protocol';
 import { ArtisanRedisTemplate, RedisTemplate } from './template';
 
+const NAMESPACE = 'artisan-redis';
+
 @provider({
 	register: ({ container }) => {
 		container.registerClass(RedisProvider, ArtisanRedisProvider);
@@ -28,8 +29,11 @@ import { ArtisanRedisTemplate, RedisTemplate } from './template';
 export class ArtisanRedisProvider
 	implements RedisProvider, OnProviderInit, OnProviderDestroy, ProviderInitOrder, Namable
 {
-	@autowired(LoggerProvider)
-	public logger: LoggerProvider;
+	logger: LoggerProvider;
+
+	constructor(@autowired(LoggerProvider) _logger: LoggerProvider) {
+		this.logger = _logger.tag(NAMESPACE);
+	}
 
 	@value(REDIS_PROVIDER_CONFIG_KEY)
 	private _config?: RedisProviderConfig;
@@ -37,7 +41,7 @@ export class ArtisanRedisProvider
 	private _clients = new Map<string, ArtisanRedis>();
 
 	name(): string {
-		return 'artisan-redis';
+		return NAMESPACE;
 	}
 
 	providerInitOrder(): number {
@@ -49,14 +53,13 @@ export class ArtisanRedisProvider
 
 		const entries = Object.entries(config.clients || {});
 
-		this.logger.info('[redis] initializing...', { client_keys: entries.map(([key]) => key) });
+		this.logger.info('initializing...', { client_keys: entries.map(([key]) => key) });
 
 		const clients = await Promise.all(
 			entries.map(async ([key, options]): Promise<[string, ArtisanRedis]> => {
 				const client = new ArtisanRedis({
 					name: key,
-					logger: this.logger,
-					logPrefix: entries.length > 1 ? `[redis] client(${key})` : '[redis]',
+					logger: key === 'default' ? this.logger : this.logger.tag(key),
 					redisOptions: options,
 				});
 
@@ -70,22 +73,22 @@ export class ArtisanRedisProvider
 			this._clients.set(key, client);
 		}
 
-		this.logger.info('[redis] initialized');
+		this.logger.info('initialized');
 	}
 
 	async onProviderDestroy(): Promise<void> {
-		this.logger.info('[redis] destroying...');
+		this.logger.info('closing...');
 
 		await Promise.all([...this._clients.values()].map((client) => client.disconnect()));
 
-		this.logger.info('[redis] destroyed');
+		this.logger.info('closed');
 	}
 
-	getRedis(client?: string): RedisClient {
+	getClient(client?: string): RedisClient {
 		return this._getRedisClient(client).client;
 	}
 
-	createTemplate(options?: string | { client?: string; trace?: TraceContext }): RedisTemplate {
+	createTemplate(options?: string | { client?: string }): RedisTemplate {
 		let client: string | undefined;
 
 		if (typeof options !== 'string') {
@@ -105,7 +108,7 @@ export class ArtisanRedisProvider
 		const redisClient = this._clients.get(clientName);
 
 		if (!redisClient) {
-			throw new ArtisanException(`Undefined redisClient name: ${clientName}`);
+			throw new ArtisanException(`Undefined redis-client name: ${clientName}`);
 		}
 
 		return redisClient;

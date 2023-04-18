@@ -1,6 +1,5 @@
-import { Dictionary, TraceContext } from '@artisan-framework/core';
+import { Dictionary } from '@artisan-framework/core';
 import { Cluster, ClusterNode, ClusterOptions, Redis, RedisOptions } from 'ioredis';
-import { RedisTemplate } from './template';
 
 export const RedisProvider = Symbol('Artisan#RedisProvider');
 
@@ -31,6 +30,5 @@ export interface RedisProviderConfig {
 }
 
 export interface RedisProvider {
-	getRedis(client?: string): RedisClient;
-	createTemplate(options?: string | { client?: string; trace?: TraceContext }): RedisTemplate;
+	getClient(client?: string): RedisClient;
 }

@@ -1,5 +1,5 @@
 import { DependencyContainer } from '../container';
-import { Constructor } from '../interfaces';
+import { Constructable } from '../interfaces';
 import { LoggerProvider } from '../logger';
 
 export interface OnProviderInit {
@@ -32,7 +32,7 @@ export const DEFAULT_PROVIDER_INIT_ORDER = 10000;
 
 export interface ProviderRegister {
 	readonly container: DependencyContainer;
-	useProvider: (providerClass: Constructor<any>) => void;
+	useProvider: (providerClass: Constructable<any>) => void;
 }
 
 export interface ApplicationContext extends ProviderRegister {

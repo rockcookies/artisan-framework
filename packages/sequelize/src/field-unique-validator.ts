@@ -1,4 +1,4 @@
-import { Constructor, errRes, NullablePartial, okRes, Res } from '@artisan-framework/core';
+import { Constructable, errRes, NullablePartial, okRes, Res } from '@artisan-framework/core';
 import { Op } from 'sequelize';
 import { SequelizeSessionManager } from './session';
 
@@ -34,7 +34,7 @@ export class FieldUniqueValidator<T, E> {
 
 	async validate(
 		session: SequelizeSessionManager,
-		entity: Constructor<T>,
+		entity: Constructable<T>,
 		attrs: NullablePartial<T>,
 	): Promise<Res<undefined, E>> {
 		const or: any[] = [];

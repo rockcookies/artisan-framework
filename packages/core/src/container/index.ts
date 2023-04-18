@@ -1,14 +1,6 @@
 import 'reflect-metadata';
 
 export {
-	AdvisorMethodOptions,
-	beforeMethod,
-	afterAsyncMethodReturning,
-	afterSyncMethodReturning,
-	afterAsyncMethodThrows,
-	afterSyncMethodThrows,
-} from './decorators/advice';
-export {
 	ValueOptions,
 	value,
 	postConstruct,
@@ -25,7 +17,7 @@ export {
 	ConfigHolder,
 	DependencyContainer,
 	ObjectFactory,
-	InjectionToken,
+	InjectionIdentifier,
 	InjectableScope,
 	MethodInvokeContext,
 } from './container-protocol';

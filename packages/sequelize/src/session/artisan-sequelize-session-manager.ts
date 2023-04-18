@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-types */
-import { ArtisanException, Constructor, Dictionary, TraceContext } from '@artisan-framework/core';
+import { ArtisanException, Constructable, Dictionary } from '@artisan-framework/core';
 import {
 	AggregateOptions,
 	BulkCreateOptions,
@@ -31,7 +31,7 @@ import {
 	Sequelize,
 } from 'sequelize';
 import { ArtisanSequelize } from '../artisan-sequelize';
-import { EntityInstance } from '../sequelize-protocol';
+import { EntityInstance, SequelizeLogging } from '../sequelize-protocol';
 import {
 	QueryOptionsWithEntity,
 	SequelizeStatement,
@@ -41,14 +41,17 @@ import {
 
 export class ArtisanSequelizeSessionManager implements SequelizeTransactionManager {
 	protected _transaction?: Transaction;
-	protected _trace?: TraceContext;
+	protected _logging?: SequelizeLogging | false;
 
 	readonly sequelize: Sequelize;
 
-	constructor(protected _sequelize: ArtisanSequelize, options?: Transactionable & { trace?: TraceContext }) {
+	constructor(
+		protected _sequelize: ArtisanSequelize,
+		options?: Transactionable & { logging?: SequelizeLogging | false },
+	) {
 		this.sequelize = _sequelize.instance;
 		this._transaction = options?.transaction || undefined;
-		this._trace = options?.trace;
+		this._logging = options?.logging;
 	}
 
 	async query(
@@ -95,18 +98,18 @@ export class ArtisanSequelizeSessionManager implements SequelizeTransactionManag
 		return this._sequelize.instance.query(sql, this.options(options));
 	}
 
-	async findAll<E>(entity: Constructor<E>, options?: FindOptions): Promise<Array<EntityInstance<E>>> {
+	async findAll<E>(entity: Constructable<E>, options?: FindOptions): Promise<Array<EntityInstance<E>>> {
 		const model = this._sequelize.getModel(entity);
 		return model.findAll(this.options(options || {}));
 	}
 
 	async findByPk<E>(
-		entity: Constructor<E>,
+		entity: Constructable<E>,
 		identifier: Identifier,
 		options?: Omit<FindOptions, 'where'>,
 	): Promise<EntityInstance<E> | null>;
 	async findByPk<E>(
-		entity: Constructor<E>,
+		entity: Constructable<E>,
 		identifier: Identifier,
 		options: Omit<NonNullFindOptions, 'where'>,
 	): Promise<EntityInstance<E>> {
@@ -114,14 +117,14 @@ export class ArtisanSequelizeSessionManager implements SequelizeTransactionManag
 		return model.findByPk(identifier, this.options(options || {}));
 	}
 
-	async findOne<E>(entity: Constructor<E>, options?: FindOptions): Promise<EntityInstance<E> | null>;
-	async findOne<E>(entity: Constructor<E>, options: NonNullFindOptions): Promise<EntityInstance<E>> {
+	async findOne<E>(entity: Constructable<E>, options?: FindOptions): Promise<EntityInstance<E> | null>;
+	async findOne<E>(entity: Constructable<E>, options: NonNullFindOptions): Promise<EntityInstance<E>> {
 		const model = this._sequelize.getModel(entity);
 		return model.findOne(this.options(options || {}));
 	}
 
 	async aggregate<E, T extends DataType | unknown>(
-		entity: Constructor<E>,
+		entity: Constructable<E>,
 		field: keyof E | '*',
 		aggregateFunction: string,
 		options?: AggregateOptions<T>,
@@ -130,18 +133,18 @@ export class ArtisanSequelizeSessionManager implements SequelizeTransactionManag
 		return model.aggregate(field, aggregateFunction, this.options(options || {}));
 	}
 
-	async countWithOptions<E>(entity: Constructor<E>, options: CountWithOptions): Promise<{ [key: string]: number }> {
+	async countWithOptions<E>(entity: Constructable<E>, options: CountWithOptions): Promise<{ [key: string]: number }> {
 		const model = this._sequelize.getModel(entity);
 		return model.count(this.options(options)) as any;
 	}
 
-	async count<E>(entity: Constructor<E>, options: CountOptions): Promise<number> {
+	async count<E>(entity: Constructable<E>, options: CountOptions): Promise<number> {
 		const model = this._sequelize.getModel(entity);
 		return model.count(this.options(options));
 	}
 
 	async findAndCountAll<E>(
-		entity: Constructor<E>,
+		entity: Constructable<E>,
 		options?: FindAndCountOptions,
 	): Promise<{ rows: Array<EntityInstance<E>>; count: number }> {
 		const model = this._sequelize.getModel(entity);
@@ -149,7 +152,7 @@ export class ArtisanSequelizeSessionManager implements SequelizeTransactionManag
 	}
 
 	async max<E, T extends DataType | unknown>(
-		entity: Constructor<E>,
+		entity: Constructable<E>,
 		field: keyof E,
 		options?: AggregateOptions<T>,
 	): Promise<T> {
@@ -158,7 +161,7 @@ export class ArtisanSequelizeSessionManager implements SequelizeTransactionManag
 	}
 
 	async min<E, T extends DataType | unknown>(
-		entity: Constructor<E>,
+		entity: Constructable<E>,
 		field: keyof E,
 		options?: AggregateOptions<T>,
 	): Promise<T> {
@@ -167,7 +170,7 @@ export class ArtisanSequelizeSessionManager implements SequelizeTransactionManag
 	}
 
 	async sum<E, T extends DataType | unknown>(
-		entity: Constructor<E>,
+		entity: Constructable<E>,
 		field: keyof E,
 		options?: AggregateOptions<T>,
 	): Promise<number> {
@@ -175,14 +178,14 @@ export class ArtisanSequelizeSessionManager implements SequelizeTransactionManag
 		return model.sum(<any>field, this.options(options || {}));
 	}
 
-	async create<E>(entity: Constructor<E>, values: Dictionary, options?: CreateOptions): Promise<EntityInstance<E>>;
+	async create<E>(entity: Constructable<E>, values: Dictionary, options?: CreateOptions): Promise<EntityInstance<E>>;
 	async create<E>(
-		entity: Constructor<E>,
+		entity: Constructable<E>,
 		values: Dictionary,
 		options: CreateOptions & { returning: false },
 	): Promise<void>;
 	async create<E>(
-		entity: Constructor<E>,
+		entity: Constructable<E>,
 		values: Dictionary,
 		_options?: CreateOptions & { returning: false },
 	): Promise<any> {
@@ -197,20 +200,23 @@ export class ArtisanSequelizeSessionManager implements SequelizeTransactionManag
 		return model.create(values, this.options(options || {}));
 	}
 
-	async findOrCreate<E>(entity: Constructor<E>, options: FindOrCreateOptions): Promise<[EntityInstance<E>, boolean]> {
+	async findOrCreate<E>(
+		entity: Constructable<E>,
+		options: FindOrCreateOptions,
+	): Promise<[EntityInstance<E>, boolean]> {
 		const model = this._sequelize.getModel(entity);
 		return model.findOrBuild(this.options(options));
 	}
 
 	async findCreateFind<E>(
-		entity: Constructor<E>,
+		entity: Constructable<E>,
 		options: FindOrCreateOptions,
 	): Promise<[EntityInstance<E>, boolean]> {
 		const model = this._sequelize.getModel(entity);
 		return model.findCreateFind(this.options(options));
 	}
 
-	async upsert<E>(entity: Constructor<E>, values: object, options?: UpsertOptions): Promise<boolean | null> {
+	async upsert<E>(entity: Constructable<E>, values: object, options?: UpsertOptions): Promise<boolean | null> {
 		const model = this._sequelize.getModel(entity);
 
 		const result = await model.upsert(values as any, this.options(options || {}));
@@ -218,7 +224,7 @@ export class ArtisanSequelizeSessionManager implements SequelizeTransactionManag
 	}
 
 	async bulkCreate<E>(
-		entity: Constructor<E>,
+		entity: Constructable<E>,
 		records: object[],
 		options?: BulkCreateOptions,
 	): Promise<Array<EntityInstance<E>>> {
@@ -226,23 +232,23 @@ export class ArtisanSequelizeSessionManager implements SequelizeTransactionManag
 		return model.bulkCreate(records as any, this.options(options || {}));
 	}
 
-	async truncate<E>(entity: Constructor<E>, options?: TruncateOptions): Promise<void> {
+	async truncate<E>(entity: Constructable<E>, options?: TruncateOptions): Promise<void> {
 		const model = this._sequelize.getModel(entity);
 		return model.truncate(this.options(options || {}));
 	}
 
-	async destroy<E>(entity: Constructor<E>, options?: DestroyOptions): Promise<number> {
+	async destroy<E>(entity: Constructable<E>, options?: DestroyOptions): Promise<number> {
 		const model = this._sequelize.getModel(entity);
 		return model.destroy(this.options(options || {}));
 	}
 
-	async restore<E>(entity: Constructor<E>, options?: RestoreOptions): Promise<void> {
+	async restore<E>(entity: Constructable<E>, options?: RestoreOptions): Promise<void> {
 		const model = this._sequelize.getModel(entity);
 		return model.restore(this.options(options || {}));
 	}
 
 	async update<E>(
-		entity: Constructor<E>,
+		entity: Constructable<E>,
 		values: object,
 		options: Omit<UpdateOptions, 'returning'>,
 	): Promise<number> {
@@ -252,17 +258,17 @@ export class ArtisanSequelizeSessionManager implements SequelizeTransactionManag
 	}
 
 	async increment<E>(
-		entity: Constructor<E>,
+		entity: Constructable<E>,
 		fields: { [key in keyof E]?: number },
 		_options: IncrementDecrementOptions,
 	): Promise<number>;
 	async increment<E>(
-		entity: Constructor<E>,
+		entity: Constructable<E>,
 		fields: keyof E | Array<keyof E>,
 		_options: IncrementDecrementOptionsWithBy,
 	): Promise<number>;
 	async increment<E>(
-		entity: Constructor<E>,
+		entity: Constructable<E>,
 		fields: any,
 		_options: IncrementDecrementOptionsWithBy,
 	): Promise<number> {
@@ -286,7 +292,7 @@ export class ArtisanSequelizeSessionManager implements SequelizeTransactionManag
 		}
 	}
 
-	optionInclude<T>(entity: Constructor<any>, field: keyof T, options?: IncludeOptions): IncludeOptions {
+	optionInclude<T>(entity: Constructable<any>, field: keyof T, options?: IncludeOptions): IncludeOptions {
 		const model = this._sequelize.getModel(entity);
 
 		return {
@@ -302,12 +308,12 @@ export class ArtisanSequelizeSessionManager implements SequelizeTransactionManag
 		autoCallback: (tx: SequelizeTransactionManager) => PromiseLike<T>,
 	): Promise<T>;
 	async transaction(options: SequelizeTransactionOptions, autoCallback?: any): Promise<any> {
-		const { transaction, trace: _trace, ...restOptions } = options;
-		const trace = _trace || this._trace;
+		const { transaction, logging: _logging, ...restOptions } = options;
+		const logging = _logging != null ? _logging : this._logging;
 
 		const sequelizeTransaction: TransactionOptions = {
 			...restOptions,
-			...this._sequelize.createLogging({ trace }),
+			...(logging != null ? { logging } : {}),
 		};
 
 		if (transaction) {
@@ -324,14 +330,14 @@ export class ArtisanSequelizeSessionManager implements SequelizeTransactionManag
 			const trx = await this._sequelize.instance.transaction(sequelizeTransaction);
 			return new ArtisanSequelizeSessionManager(this._sequelize, {
 				transaction: trx,
-				trace: trace,
+				logging,
 			});
 		}
 
 		return this._sequelize.instance.transaction(sequelizeTransaction, async (trx) => {
 			const stm = new ArtisanSequelizeSessionManager(this._sequelize, {
 				transaction: trx,
-				trace: trace,
+				logging,
 			});
 			return autoCallback(stm);
 		});
@@ -358,7 +364,7 @@ export class ArtisanSequelizeSessionManager implements SequelizeTransactionManag
 	protected options<T extends Transactionable & Logging>(options: T): T {
 		return {
 			transaction: options.transaction || this._transaction,
-			...this._sequelize.createLogging({ trace: this._trace }),
+			...(this._logging != null ? { logging: this._logging } : {}),
 			...options,
 		};
 	}

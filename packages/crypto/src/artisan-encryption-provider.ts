@@ -33,6 +33,8 @@ const crypt = (cipher: crypto.Cipher | crypto.Decipher, data: Buffer): Buffer =>
 	return Buffer.concat([text, pad]);
 };
 
+const NAMESPACE = 'artisan-encryption';
+
 @provider({
 	register: ({ container }) => {
 		container.registerClass(EncryptionProvider, ArtisanEncryptionProvider);
@@ -43,14 +45,17 @@ export class ArtisanEncryptionProvider
 {
 	private _algorithms: Array<Required<EncryptionAlgorithm>> = [];
 
-	@autowired(LoggerProvider)
 	logger: LoggerProvider;
+
+	constructor(@autowired(LoggerProvider) _logger: LoggerProvider) {
+		this.logger = _logger.tag(NAMESPACE);
+	}
 
 	@value(ENCRYPTION_PROVIDER_CONFIG_KEY)
 	_config?: EncryptionProviderConfig;
 
 	name(): string {
-		return 'artisan-encryption';
+		return NAMESPACE;
 	}
 
 	providerInitOrder(): number {

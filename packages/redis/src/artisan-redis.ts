@@ -4,7 +4,6 @@ import IORedis from 'ioredis';
 
 interface ArtisanRedisOptions {
 	name: string;
-	logPrefix: string;
 	logger: LoggerProvider;
 	redisOptions: RedisClientOptions;
 }
@@ -14,14 +13,12 @@ export class ArtisanRedis {
 	private _shutdownCleanupRefs: Array<() => void> = [];
 
 	key: string;
-	logPrefix: string;
 	logger: LoggerProvider;
 	client: RedisClient;
 
 	constructor(options: ArtisanRedisOptions) {
 		this.key = options.name;
 		this._options = options.redisOptions;
-		this.logPrefix = options.logPrefix;
 		this.logger = options.logger;
 	}
 
@@ -35,17 +32,17 @@ export class ArtisanRedis {
 		const options = this._options;
 
 		if (options.mode === 'cluster' || options.keepAlive != null) {
-			this.logger.info(`${this.logPrefix} keepAlive detected, skip disconnection`);
+			this.logger.info('keepAlive detected, skip disconnection');
 			return;
 		}
 
-		this.logger.info(`${this.logPrefix} disconnecting...`);
+		this.logger.info('disconnecting...');
 
 		try {
 			this.client.disconnect();
-			this.logger.info(`${this.logPrefix} disconnected`);
+			this.logger.info('disconnected');
 		} catch (err) {
-			this.logger.warn(`${this.logPrefix} disconnect error: ${err}`, { err });
+			this.logger.warn(`disconnect error: ${err}`, { err });
 		}
 	}
 
@@ -53,7 +50,7 @@ export class ArtisanRedis {
 		return new Promise((resolve, reject) => {
 			const options = this._options;
 
-			this.logger.info(`${this.logPrefix} mode(${options.mode}) connecting...`);
+			this.logger.info(`mode(${options.mode}) connecting...`);
 
 			if (options.mode === 'cluster') {
 				const { nodes, mode, ...restOptions } = options;
@@ -94,18 +91,18 @@ export class ArtisanRedis {
 			}
 
 			const onError = (err: any) => {
-				this.logger.error(`${this.logPrefix} received error: ${err}`, { err });
+				this.logger.error(`received error: ${err}`, { err });
 			};
 
 			const onConnect = () => {
-				this.logger.info(`${this.logPrefix} connected`);
+				this.logger.info('connected');
 			};
 
 			const onFirstReady = () => {
 				this.client.off('error', onFirstError);
 				this.client.off('ready', onFirstReady);
 
-				this.logger.info(`${this.logPrefix} ready`);
+				this.logger.info('ready');
 
 				resolve();
 			};

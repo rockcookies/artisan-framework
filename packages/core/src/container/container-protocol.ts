@@ -1,6 +1,5 @@
-import { Constructor, Dictionary } from '../interfaces';
+import { AbstractConstructable, Constructable, Dictionary } from '../interfaces';
 import { LazyConstructor } from './decorators/object';
-import { AdvisorMethodOptions } from './decorators/advice';
 
 export const TAGGED_PARAMETER = 'artisan:tagged_parameter';
 
@@ -23,13 +22,13 @@ export enum InjectableScope {
 	Resolution,
 }
 
-export type InjectionToken<T = any> = string | symbol | Constructor<T>;
+export type InjectionIdentifier<T = unknown> = AbstractConstructable<T> | Constructable<T> | string | symbol;
 
 export type ObjectFactory = (...args: any[]) => any;
 
 export interface TaggedAutowiredMetadata {
 	type: 'autowired';
-	token: InjectionToken | LazyConstructor;
+	token: InjectionIdentifier | LazyConstructor;
 	isArray: boolean;
 	optional: boolean;
 }
@@ -44,42 +43,33 @@ export type TaggedMetadata = TaggedAutowiredMetadata | TaggedValueMetadata;
 
 export interface ClassRegistry {
 	type: 'class';
-	token: InjectionToken;
+	token: InjectionIdentifier;
 	scope: InjectableScope;
-	clz: Constructor<any>;
+	clz: AbstractConstructable;
 	postConstructMethod?: string;
 	constructorArgs: Array<TaggedMetadata | undefined>;
 	properties: Dictionary<TaggedMetadata>;
 }
 
-export interface AdvisorRegistry extends Omit<ClassRegistry, 'type'> {
-	type: 'advisor';
-	beforeMethod?: Dictionary<AdvisorMethodOptions>;
-	afterAsyncMethodReturning?: Dictionary<AdvisorMethodOptions>;
-	afterSyncMethodReturning?: Dictionary<AdvisorMethodOptions>;
-	afterAsyncMethodThrows?: Dictionary<AdvisorMethodOptions>;
-	afterSyncMethodThrows?: Dictionary<AdvisorMethodOptions>;
-}
-
 export interface FactoryRegistry {
 	type: 'factory';
-	token: InjectionToken;
+	token: InjectionIdentifier;
 	factory: (container: DependencyContainer) => ObjectFactory;
 }
 
 export interface ConstantRegistry {
 	type: 'constant';
-	token: InjectionToken;
+	token: InjectionIdentifier;
 	constant: any;
 }
 
 export interface DynamicRegistry {
 	type: 'dynamic';
-	token: InjectionToken;
+	token: InjectionIdentifier;
 	dynamic: (container: DependencyContainer) => any;
 }
 
-export type ServiceRegistry = ClassRegistry | AdvisorRegistry | FactoryRegistry | ConstantRegistry | DynamicRegistry;
+export type ServiceRegistry = ClassRegistry | FactoryRegistry | ConstantRegistry | DynamicRegistry;
 
 export interface ClassRegistrationOptions {
 	scope?: InjectableScope;
@@ -91,28 +81,25 @@ export interface DependencyContainer {
 
 	/** 注册类 */
 	registerClass<T>(
-		token: InjectionToken<T>,
-		clz: Constructor<T>,
+		token: InjectionIdentifier<T>,
+		clz: Constructable<T>,
 		options?: ClassRegistrationOptions,
 	): DependencyContainer;
 
 	/** 注册常量 */
-	registerConstant<T>(token: InjectionToken, constant: T): DependencyContainer;
+	registerConstant<T>(token: InjectionIdentifier, constant: T): DependencyContainer;
 
 	/** 注册动态组件 */
 	registerDynamic<T>(
-		token: InjectionToken<T>,
+		token: InjectionIdentifier<T>,
 		dynamic: (dependencyContainer: DependencyContainer) => T,
 	): DependencyContainer;
 
 	/** 注册工厂 */
 	registerFactory<T extends ObjectFactory>(
-		token: InjectionToken<T>,
+		token: InjectionIdentifier<T>,
 		factory: (dependencyContainer: DependencyContainer) => T,
 	): DependencyContainer;
-
-	/** 注册AOP观察者 */
-	registerAdvisor<T>(clz: Constructor<T>): DependencyContainer;
 
 	/**
 	 * Resolve a token into an instance
@@ -120,8 +107,8 @@ export interface DependencyContainer {
 	 * @param token The dependency token
 	 * @return An instance of the dependency
 	 */
-	resolve<T>(token: InjectionToken<T>): T;
-	resolveAll<T>(token: InjectionToken<T>): T[];
+	resolve<T>(token: InjectionIdentifier<T>): T;
+	resolveAll<T>(token: InjectionIdentifier<T>): T[];
 
 	/**
 	 * Check if the given dependency is registered
@@ -130,7 +117,7 @@ export interface DependencyContainer {
 	 * @param recursive Should parent containers be checked?
 	 * @return Whether or not the token is registered
 	 */
-	isRegistered<T>(token: InjectionToken<T>, recursive?: boolean): boolean;
+	isRegistered<T>(token: InjectionIdentifier<T>, recursive?: boolean): boolean;
 
 	/**
 	 * Clears all registered tokens

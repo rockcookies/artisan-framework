@@ -1,6 +1,6 @@
 import { ArtisanDependencyContainer, DependencyContainer } from '../container';
 import { ArtisanException } from '../error';
-import { Constructor } from '../interfaces';
+import { Constructable } from '../interfaces';
 import { ConsoleLoggerProvider, LoggerProvider } from '../logger';
 import {
 	ApplicationContextOptions,
@@ -44,13 +44,13 @@ export class ArtisanApplicationContext implements ProviderRegister {
 	public readonly logger: LoggerProvider;
 
 	protected _isInitialized = false;
-	protected _registered = new Set<Constructor<any>>();
+	protected _registered = new Set<Constructable<any>>();
 
 	constructor(options?: ApplicationContextOptions) {
 		this.logger = options?.logger || new ConsoleLoggerProvider();
 	}
 
-	useProvider(providerClass: Constructor<any>): void {
+	useProvider(providerClass: Constructable<any>): void {
 		// already registered
 		if (this._registered.has(providerClass)) {
 			return;

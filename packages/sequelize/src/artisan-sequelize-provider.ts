@@ -7,18 +7,20 @@ import {
 	OnProviderInit,
 	provider,
 	ProviderInitOrder,
-	TraceContext,
 	value,
 } from '@artisan-framework/core';
 import { Sequelize } from 'sequelize/types';
 import { ArtisanSequelize } from './artisan-sequelize';
 import {
+	SequelizeLogging,
 	SequelizeProvider,
 	SequelizeProviderConfig,
 	SEQUELIZE_PROVIDER_CONFIG_KEY,
 	SEQUELIZE_PROVIDER_INIT_ORDER,
 } from './sequelize-protocol';
 import { ArtisanSequelizeSessionManager, SequelizeSessionManager } from './session';
+
+const NAMESPACE = 'artisan-sequelize';
 
 @provider({
 	register: ({ container }) => {
@@ -28,8 +30,11 @@ import { ArtisanSequelizeSessionManager, SequelizeSessionManager } from './sessi
 export class ArtisanSequelizeProvider
 	implements SequelizeProvider, OnProviderInit, OnProviderDestroy, ProviderInitOrder, Namable
 {
-	@autowired(LoggerProvider)
 	logger: LoggerProvider;
+
+	constructor(@autowired(LoggerProvider) _logger: LoggerProvider) {
+		this.logger = _logger.tag(NAMESPACE);
+	}
 
 	@value(SEQUELIZE_PROVIDER_CONFIG_KEY)
 	private _config?: SequelizeProviderConfig;
@@ -37,7 +42,7 @@ export class ArtisanSequelizeProvider
 	private _databases = new Map<string, ArtisanSequelize>();
 
 	name(): string {
-		return 'artisan-sequelize';
+		return NAMESPACE;
 	}
 
 	providerInitOrder(): number {
@@ -49,14 +54,13 @@ export class ArtisanSequelizeProvider
 
 		const entries = Object.entries(config.datasources || {});
 
-		this.logger.info('[sequelize] initialing...', { datasource_keys: entries.map(([key]) => key) });
+		this.logger.info('initialing...', { datasource_keys: entries.map(([key]) => key) });
 
 		const datasources = entries.map(([key, options]): [string, ArtisanSequelize] => {
 			const db = new ArtisanSequelize({
 				...options,
 				name: key,
-				logPrefix: entries.length > 1 ? `[sequelize] db(${key})` : '[sequelize]',
-				logger: this.logger,
+				logger: key === 'default' ? this.logger : this.logger.tag(key),
 			});
 
 			// entities
@@ -72,33 +76,35 @@ export class ArtisanSequelizeProvider
 			this._databases.set(key, db);
 		}
 
-		this.logger.info('[sequelize] initialized');
+		this.logger.info('initialized');
 	}
 
 	async onProviderDestroy(): Promise<void> {
-		this.logger.info('[sequelize] destroying...');
+		this.logger.info('destroying...');
 		await Promise.all([...this._databases.values()].map((db) => db.close()));
-		this.logger.info('[sequelize] destroyed');
+		this.logger.info('destroyed');
 	}
 
 	getSequelize(datasource?: string): Sequelize {
 		return this._getSequelize(datasource).instance;
 	}
 
-	createSessionManager(options?: string | { datasource?: string; trace?: TraceContext }): SequelizeSessionManager {
+	createSessionManager(
+		options?: string | { datasource?: string; logging?: SequelizeLogging | false },
+	): SequelizeSessionManager {
 		let datasource: string | undefined;
-		let trace: TraceContext | undefined;
+		let logging: SequelizeLogging | false | undefined;
 
 		if (typeof options !== 'string') {
 			datasource = options?.datasource;
-			trace = options?.trace;
+			logging = options?.logging;
 		} else {
 			datasource = options;
 		}
 
 		const sequelize = this._getSequelize(datasource);
 
-		return new ArtisanSequelizeSessionManager(sequelize, { trace });
+		return new ArtisanSequelizeSessionManager(sequelize, { logging });
 	}
 
 	private _getSequelize(datasource?: string): ArtisanSequelize {

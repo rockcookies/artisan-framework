@@ -25,7 +25,7 @@
   },
   "scripts": {
     "test": "jest",
-    "codecov": "jest --coverage",
+    "coverage": "jest --coverage",
     "clean": "rimraf ./build ./coverage",
     "precompile": "tsc --version",
     "compile": "tsc -p tsconfig.build.json",
@@ -33,14 +33,16 @@
     "prepublishOnly": "npm run clean && npm run compile"
   },
   "devDependencies": {
-    "@types/node": "^18.7.9",
-    "rimraf": "^3.0.2",
-    "typescript": "^4.7.4"
+    "@types/node": "^18.15.5",
+    "rimraf": "^4.4.0",
+    "typescript": "^4.9.5"
   },
   "dependencies": {
     "@artisan-framework/core": "^0.3.0",
-    "agentkeepalive": "^4.2.1",
-    "urllib": "^2.37.4"
+    "@types/mime-types": "^2.1.1",
+    "agentkeepalive": "^4.3.0",
+    "mime-types": "^2.1.35",
+    "undici": "^5.21.0"
   },
   "gitHead": "10070ac9f307f4e5540c94d4f76462d58dea5b0c"
 }

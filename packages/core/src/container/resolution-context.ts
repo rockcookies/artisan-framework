@@ -1,5 +1,5 @@
-import { Constructor } from '../interfaces';
+import { AbstractConstructable } from '../interfaces';
 
 export class ResolutionContext {
-	scopedResolutions: Map<Constructor<any>, any> = new Map();
+	scopedResolutions: Map<AbstractConstructable, any> = new Map();
 }

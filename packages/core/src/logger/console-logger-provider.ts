@@ -2,22 +2,22 @@ import { Dictionary } from '../interfaces';
 import { LoggerProvider } from './logger-protocol';
 
 export class ConsoleLoggerProvider implements LoggerProvider {
-	constructor(private _meta?: Dictionary) {}
+	constructor(private _tag?: string, private _meta?: Dictionary) {}
 
 	error(message: string, meta?: Dictionary) {
-		console.error(message, ...this._merge(meta));
+		console.error(`[${this._tag}] ${message}`, ...this._merge(meta));
 	}
 
 	warn(message: string, meta?: Dictionary) {
-		console.warn(message, ...this._merge(meta));
+		console.warn(`[${this._tag}] ${message}`, ...this._merge(meta));
 	}
 
 	info(message: string, meta?: Dictionary) {
-		console.info(message, ...this._merge(meta));
+		console.info(`[${this._tag}] ${message}`, ...this._merge(meta));
 	}
 
 	debug(message: string, meta?: Dictionary) {
-		console.debug(message, ...this._merge(meta));
+		console.debug(`[${this._tag}] ${message}`, ...this._merge(meta));
 	}
 
 	protected _merge(meta?: Dictionary): Dictionary[] {
@@ -28,7 +28,11 @@ export class ConsoleLoggerProvider implements LoggerProvider {
 		return [];
 	}
 
+	tag(tag: string): LoggerProvider {
+		return new ConsoleLoggerProvider(this._tag ? `${this._tag}.${tag}` : tag, this._meta || {});
+	}
+
 	with(meta: Dictionary): LoggerProvider {
-		return new ConsoleLoggerProvider({ ...this._meta, ...meta });
+		return new ConsoleLoggerProvider(this._tag, { ...this._meta, ...meta });
 	}
 }

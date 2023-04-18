@@ -1,4 +1,4 @@
-import { InjectionToken } from './container-protocol';
+import { InjectionIdentifier } from './container-protocol';
 import { formatInjectionToken } from './decorators/object';
 
 export const DUPLICATED_PARAMETER_METADATA = (idx: number | string, target: any): string => {
@@ -6,10 +6,10 @@ export const DUPLICATED_PARAMETER_METADATA = (idx: number | string, target: any)
 	return `The @autowired was used more than once at position #${idx} of ${name} constructor.`;
 };
 
-export const NOT_REGISTERED = (token: InjectionToken) =>
+export const NOT_REGISTERED = (token: InjectionIdentifier) =>
 	`No matching dependency found for token: ${formatInjectionToken(token)}.`;
 
-export const CIRCULAR_PARAMETER_DEPENDENCY = (circular: Array<[InjectionToken, number | string]>) =>
+export const CIRCULAR_PARAMETER_DEPENDENCY = (circular: Array<[InjectionIdentifier, number | string]>) =>
 	`Circular constructor dependency found: ${circular
 		.map(([ctor, idx]) => `[${formatInjectionToken(ctor)}, ${idx}]`)
 		.join(' > ')}.`;
@@ -22,5 +22,4 @@ export const DEPENDENCY_TOKEN_UNRESOLVED = (target: any, propertyKey: string, pa
 
 export const LAZY_UNDEFINED = 'Attempt to `lazy` undefined. Constructor must be wrapped in a callback';
 
-// TODO 测试
 export const CANT_REGISTER_DEPENDENCY_CONTAINER_TOKEN = 'Can`t register `DependencyContainer` token.';

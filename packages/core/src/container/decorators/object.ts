@@ -1,5 +1,5 @@
 import {
-	InjectionToken,
+	InjectionIdentifier,
 	TaggedAutowiredMetadata,
 	TaggedMetadata,
 	TAGGED_PARAMETER,
@@ -7,7 +7,7 @@ import {
 	TaggedValueMetadata,
 	TAGGED_POST_CONSTRUCT,
 } from '../container-protocol';
-import { Constructor, Dictionary } from '../../interfaces';
+import { AbstractConstructable, Constructable, Dictionary } from '../../interfaces';
 import { ArtisanException } from '../../error';
 import { DEPENDENCY_TOKEN_UNRESOLVED, DUPLICATED_PARAMETER_METADATA, LAZY_UNDEFINED } from '../messages';
 import { attachMetadataProps } from '../../utils/reflect-helper';
@@ -18,12 +18,12 @@ export interface ValueOptions {
 }
 
 export interface AutowiredOptions {
-	token: InjectionToken | LazyConstructor;
+	token: InjectionIdentifier | LazyConstructor;
 	optional?: boolean;
 }
 
 export interface AutowiredAllOptions {
-	token: InjectionToken | LazyConstructor;
+	token: InjectionIdentifier | LazyConstructor;
 	optional?: boolean;
 }
 
@@ -31,11 +31,11 @@ export function isNormalToken(token?: any): token is string | symbol {
 	return typeof token === 'string' || typeof token === 'symbol';
 }
 
-export function isConstructorToken(token?: any): token is Constructor<any> | LazyConstructor<any> {
+export function isConstructorToken(token?: any): token is AbstractConstructable | Constructable | LazyConstructor {
 	return typeof token === 'function' || token instanceof LazyConstructor;
 }
 
-export function formatInjectionToken(token: InjectionToken): string {
+export function formatInjectionToken(token: InjectionIdentifier): string {
 	if (!token) {
 		return `${token}`;
 	} else if (isNormalToken(token)) {
@@ -45,7 +45,7 @@ export function formatInjectionToken(token: InjectionToken): string {
 	}
 }
 
-export function lazy<T>(wrappedConstructor: () => Constructor<T>): LazyConstructor<T> {
+export function lazy<T>(wrappedConstructor: () => Constructable<T>): LazyConstructor<T> {
 	if (typeof wrappedConstructor === 'undefined') {
 		throw new ArtisanException(LAZY_UNDEFINED);
 	}
@@ -53,10 +53,10 @@ export function lazy<T>(wrappedConstructor: () => Constructor<T>): LazyConstruct
 	return new LazyConstructor(wrappedConstructor);
 }
 
-export class LazyConstructor<T = any> {
-	private _cb: () => Constructor<T>;
+export class LazyConstructor<T = unknown> {
+	private _cb: () => Constructable<T>;
 
-	public constructor(cb: () => Constructor<any>) {
+	public constructor(cb: () => Constructable<any>) {
 		this._cb = cb;
 	}
 
@@ -98,10 +98,10 @@ function tagProperty(target: any, metadata: TaggedMetadata, propertyKey: string)
 
 function decorateAutowired(
 	metadata: Partial<TaggedAutowiredMetadata>,
-	options: InjectionToken | LazyConstructor | AutowiredOptions,
+	options: InjectionIdentifier | LazyConstructor | AutowiredOptions,
 ) {
 	return function autowired(target: any, propertyKey: string, index?: number): void {
-		let token: InjectionToken | LazyConstructor | undefined;
+		let token: InjectionIdentifier | LazyConstructor | undefined;
 		let optional = false;
 
 		if (isNormalToken(options) || isConstructorToken(options)) {
@@ -151,11 +151,11 @@ export function value(options: string | ValueOptions) {
 	};
 }
 
-export function autowiredAll(options: InjectionToken | LazyConstructor | AutowiredAllOptions) {
+export function autowiredAll(options: InjectionIdentifier | LazyConstructor | AutowiredAllOptions) {
 	return decorateAutowired({ isArray: true }, options);
 }
 
-export function autowired(options: InjectionToken | LazyConstructor | AutowiredOptions) {
+export function autowired(options: InjectionIdentifier | LazyConstructor | AutowiredOptions) {
 	return decorateAutowired({ isArray: false }, options);
 }
 

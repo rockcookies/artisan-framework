@@ -9,5 +9,6 @@ export interface LoggerProvider {
 	warn: LogFunction;
 	info: LogFunction;
 	debug: LogFunction;
+	tag: (name: string) => LoggerProvider;
 	with: (ctx: Dictionary) => LoggerProvider;
 }

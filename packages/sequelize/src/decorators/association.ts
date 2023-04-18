@@ -1,8 +1,8 @@
-import { Constructor, attachMetadataProps, Dictionary } from '@artisan-framework/core';
+import { Constructable, attachMetadataProps, Dictionary } from '@artisan-framework/core';
 import { BelongsToManyOptions, ThroughOptions, HasOneOptions, BelongsToOptions, HasManyOptions } from 'sequelize';
 import { TAGGED_DB_ASSOCIATIONS } from '../sequelize-protocol';
 
-type EntityGetter<T = any> = () => Constructor<T>;
+type EntityGetter<T = any> = () => Constructable<T>;
 
 export interface EntityThroughOptions extends Omit<ThroughOptions, 'model'> {
 	entity: EntityGetter | string;

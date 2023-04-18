@@ -1,4 +1,4 @@
-import { ArtisanException, Constructor } from '@artisan-framework/core';
+import { ArtisanException, Constructable } from '@artisan-framework/core';
 import { ModelOptions } from 'sequelize';
 import { TAGGED_DB_TABLE } from '../sequelize-protocol';
 
@@ -9,7 +9,7 @@ export interface TableOptions extends ModelOptions {
 }
 
 export function table(options: TableOptions) {
-	return function decorateTable(target: Constructor<any>) {
+	return function decorateTable(target: Constructable<any>) {
 		if (Reflect.hasOwnMetadata(TAGGED_DB_TABLE, target)) {
 			throw new ArtisanException(`The @table was used more than once on class<${target.name}> constructor`);
 		}

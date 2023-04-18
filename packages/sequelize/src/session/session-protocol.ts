@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-types */
-import { Constructor, Dictionary, TraceContext } from '@artisan-framework/core';
+import { Constructable, Dictionary } from '@artisan-framework/core';
 import {
 	AggregateOptions,
 	BulkCreateOptions,
@@ -29,7 +29,7 @@ import {
 	Sequelize,
 	IncludeOptions,
 } from 'sequelize';
-import { EntityInstance } from '../sequelize-protocol';
+import { EntityInstance, SequelizeLogging } from '../sequelize-protocol';
 
 export const SequelizeTransactionManager = Symbol('Artisan#SequelizeTransactionManager');
 
@@ -39,11 +39,11 @@ export type SequelizeStatement = string | { query: string; values: unknown[] };
 
 export interface SequelizeTransactionOptions extends Omit<TransactionOptions, 'transaction' | 'logging' | 'benchmark'> {
 	transaction?: SequelizeTransactionManager | Transaction;
-	trace?: TraceContext;
+	logging?: SequelizeLogging | false;
 }
 
 export interface QueryOptionsWithEntity<E> extends Omit<QueryOptionsWithModel<any>, 'model'> {
-	entity: Constructor<E>;
+	entity: Constructable<E>;
 }
 
 export interface SequelizeSessionManager {
@@ -72,92 +72,96 @@ export interface SequelizeSessionManager {
 		options?: QueryOptions | QueryOptionsWithType<QueryTypes.RAW>,
 	): Promise<[unknown[], unknown]>;
 
-	findAll<E>(entity: Constructor<E>, options?: FindOptions): Promise<Array<EntityInstance<E>>>;
+	findAll<E>(entity: Constructable<E>, options?: FindOptions): Promise<Array<EntityInstance<E>>>;
 
 	findByPk<E>(
-		entity: Constructor<E>,
+		entity: Constructable<E>,
 		identifier: Identifier,
 		options?: Omit<FindOptions, 'where'>,
 	): Promise<EntityInstance<E> | null>;
 	findByPk<E>(
-		entity: Constructor<E>,
+		entity: Constructable<E>,
 		identifier: Identifier,
 		options: Omit<NonNullFindOptions, 'where'>,
 	): Promise<EntityInstance<E>>;
 
-	findOne<E>(entity: Constructor<E>, options?: FindOptions): Promise<EntityInstance<E> | null>;
-	findOne<E>(entity: Constructor<E>, options: NonNullFindOptions): Promise<EntityInstance<E>>;
+	findOne<E>(entity: Constructable<E>, options?: FindOptions): Promise<EntityInstance<E> | null>;
+	findOne<E>(entity: Constructable<E>, options: NonNullFindOptions): Promise<EntityInstance<E>>;
 
 	aggregate<E, T extends DataType | unknown>(
-		entity: Constructor<E>,
+		entity: Constructable<E>,
 		field: keyof E | '*',
 		aggregateFunction: string,
 		options?: AggregateOptions<T>,
 	): Promise<T>;
 
-	countWithOptions<E>(entity: Constructor<E>, options: CountWithOptions): Promise<{ [key: string]: number }>;
+	countWithOptions<E>(entity: Constructable<E>, options: CountWithOptions): Promise<{ [key: string]: number }>;
 
-	count<E>(entity: Constructor<E>, options: CountOptions): Promise<number>;
+	count<E>(entity: Constructable<E>, options: CountOptions): Promise<number>;
 
 	findAndCountAll<E>(
-		entity: Constructor<E>,
+		entity: Constructable<E>,
 		options?: FindAndCountOptions,
 	): Promise<{ rows: Array<EntityInstance<E>>; count: number }>;
 
 	max<E, T extends DataType | unknown>(
-		entity: Constructor<E>,
+		entity: Constructable<E>,
 		field: keyof E,
 		options?: AggregateOptions<T>,
 	): Promise<T>;
 
 	min<E, T extends DataType | unknown>(
-		entity: Constructor<E>,
+		entity: Constructable<E>,
 		field: keyof E,
 		options?: AggregateOptions<T>,
 	): Promise<T>;
 
 	sum<E, T extends DataType | unknown>(
-		entity: Constructor<E>,
+		entity: Constructable<E>,
 		field: keyof E,
 		options?: AggregateOptions<T>,
 	): Promise<number>;
 
-	create<E>(entity: Constructor<E>, values: Dictionary, options?: CreateOptions): Promise<EntityInstance<E>>;
-	create<E>(entity: Constructor<E>, values: Dictionary, options: CreateOptions & { returning: false }): Promise<void>;
+	create<E>(entity: Constructable<E>, values: Dictionary, options?: CreateOptions): Promise<EntityInstance<E>>;
+	create<E>(
+		entity: Constructable<E>,
+		values: Dictionary,
+		options: CreateOptions & { returning: false },
+	): Promise<void>;
 
-	findOrCreate<E>(entity: Constructor<E>, options: FindOrCreateOptions): Promise<[EntityInstance<E>, boolean]>;
+	findOrCreate<E>(entity: Constructable<E>, options: FindOrCreateOptions): Promise<[EntityInstance<E>, boolean]>;
 
-	findCreateFind<E>(entity: Constructor<E>, options: FindOrCreateOptions): Promise<[EntityInstance<E>, boolean]>;
+	findCreateFind<E>(entity: Constructable<E>, options: FindOrCreateOptions): Promise<[EntityInstance<E>, boolean]>;
 
 	/** mysql 返回 `boolean`, postgres 和 sqlite 返回 `null` */
-	upsert<E>(entity: Constructor<E>, values: object, options?: UpsertOptions): Promise<boolean | null>;
+	upsert<E>(entity: Constructable<E>, values: object, options?: UpsertOptions): Promise<boolean | null>;
 
 	bulkCreate<E>(
-		entity: Constructor<E>,
+		entity: Constructable<E>,
 		records: object[],
 		options?: BulkCreateOptions,
 	): Promise<Array<EntityInstance<E>>>;
 
-	truncate<E>(entity: Constructor<E>, options?: TruncateOptions): Promise<void>;
+	truncate<E>(entity: Constructable<E>, options?: TruncateOptions): Promise<void>;
 
-	destroy<E>(entity: Constructor<E>, options?: DestroyOptions): Promise<number>;
+	destroy<E>(entity: Constructable<E>, options?: DestroyOptions): Promise<number>;
 
-	restore<E>(entity: Constructor<E>, options?: RestoreOptions): Promise<void>;
+	restore<E>(entity: Constructable<E>, options?: RestoreOptions): Promise<void>;
 
-	update<E>(entity: Constructor<E>, values: object, options: Omit<UpdateOptions, 'returning'>): Promise<number>;
+	update<E>(entity: Constructable<E>, values: object, options: Omit<UpdateOptions, 'returning'>): Promise<number>;
 
 	increment<E>(
-		entity: Constructor<E>,
+		entity: Constructable<E>,
 		fields: { [key in keyof E]?: number },
 		_options: IncrementDecrementOptions,
 	): Promise<number>;
 	increment<E>(
-		entity: Constructor<E>,
+		entity: Constructable<E>,
 		fields: keyof E | Array<keyof E>,
 		_options: IncrementDecrementOptionsWithBy,
 	): Promise<number>;
 
-	optionInclude<T>(entity: Constructor<any>, field: keyof T, options?: IncludeOptions): IncludeOptions;
+	optionInclude<T>(entity: Constructable<any>, field: keyof T, options?: IncludeOptions): IncludeOptions;
 
 	transaction(options: SequelizeTransactionOptions): Promise<SequelizeTransactionManager>;
 	transaction<T>(

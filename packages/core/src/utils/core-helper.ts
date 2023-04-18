@@ -59,3 +59,13 @@ export async function sleep(timeoutsMs: number): Promise<void> {
 		}, timeoutsMs);
 	});
 }
+
+export const isDef = <T>(val: T): val is NonNullable<T> => val !== undefined && val !== null;
+
+// eslint-disable-next-line @typescript-eslint/ban-types
+export const isFunction = (val: unknown): val is Function => typeof val === 'function';
+
+export const isObject = (val: unknown): val is Record<any, any> => val !== null && typeof val === 'object';
+
+export const isPromise = <T = any>(val: unknown): val is Promise<T> =>
+	isObject(val) && isFunction(val.then) && isFunction(val.catch);

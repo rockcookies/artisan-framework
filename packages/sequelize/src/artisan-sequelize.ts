@@ -1,55 +1,32 @@
 import {
 	ArtisanException,
-	Constructor,
+	Constructable,
 	Dictionary,
 	LoggerProvider,
 	recursiveGetMetadata,
 	sleep,
-	TraceContext,
 } from '@artisan-framework/core';
-import { Logging, ModelCtor, Sequelize } from 'sequelize';
+import { ModelStatic, Sequelize } from 'sequelize';
 import { EntityAssociationOptions } from './decorators/association';
 import { ColumnOptions } from './decorators/column';
 import { TableOptions } from './decorators/table';
 import { SequelizeOptions, TAGGED_DB_ASSOCIATIONS, TAGGED_DB_COLUMNS, TAGGED_DB_TABLE } from './sequelize-protocol';
+import { createSequelizeLogging } from './utils';
 
 interface ArtisanSequelizeOptions extends SequelizeOptions {
 	name: string;
-	logPrefix: string;
 	logger: LoggerProvider;
 }
 
-const createLogging = (params: {
-	logPrefix: string;
-	logger: LoggerProvider;
-	logging?: boolean;
-	trace?: TraceContext;
-}): Logging => {
-	if (params.logging === false) {
-		return { logging: false };
-	}
-
-	const meta: Dictionary | undefined = params.trace ? { trace: params.trace } : undefined;
-
-	return {
-		logging: (sql, timing) => {
-			const used = typeof timing === 'number' ? ` ${timing}ms` : '';
-			params.logger.info(`${params.logPrefix}${used} ${sql}`, meta);
-		},
-	};
-};
-
 export class ArtisanSequelize {
 	private _key: string;
-	private _logPrefix: string;
 	private _logger: LoggerProvider;
-	private _logging?: boolean;
 
-	readonly entities: Map<Constructor<any>, ModelCtor<any>>;
+	readonly entities: Map<Constructable<any>, ModelStatic<any>>;
 	readonly instance: Sequelize;
 
 	constructor(_options: ArtisanSequelizeOptions) {
-		const { name, logPrefix, logging, logger, ...options } = _options;
+		const { name, logging, logger, ...options } = _options;
 
 		this.instance = new Sequelize({
 			host: 'localhost',
@@ -62,37 +39,31 @@ export class ArtisanSequelize {
 				underscored: true,
 				...options.define,
 			},
-			...createLogging({
-				logPrefix,
-				logger,
-				logging,
-			}),
+			logging: logging !== false ? createSequelizeLogging(logger.info) : false,
 		});
 
-		this.entities = new Map<Constructor<any>, ModelCtor<any>>();
+		this.entities = new Map<Constructable<any>, ModelStatic<any>>();
 		this._key = name;
-		this._logPrefix = logPrefix;
 		this._logger = logger;
-		this._logging = logging;
 	}
 
 	async authenticate(): Promise<void> {
 		const max = 3;
 
-		this._logger.info(`${this._logPrefix} connecting...`);
+		this._logger.info('connecting...');
 
 		for (let i = 1; i <= max; i++) {
 			try {
 				await this.instance.authenticate();
 
-				this._logger.info(`${this._logPrefix} connected`);
+				this._logger.info('connected');
 				break;
 			} catch (err) {
 				if (i === max) {
 					throw err;
 				}
 
-				this._logger.warn(`${this._logPrefix} authenticate error, sleep 1s to retry...`, {
+				this._logger.warn('authenticate error, sleep 1s to retry...', {
 					err,
 				});
 
@@ -102,26 +73,17 @@ export class ArtisanSequelize {
 	}
 
 	async close(): Promise<void> {
-		this._logger.info(`${this._logPrefix} closing...`);
+		this._logger.info('closing...');
 
 		try {
 			await this.instance.close();
-			this._logger.info(`${this._logPrefix} closed`);
+			this._logger.info('closed');
 		} catch (err) {
-			this._logger.warn(`${this._logPrefix} close error: ${err}`, { err });
+			this._logger.warn(`close error: ${err}`, { err });
 		}
 	}
 
-	createLogging(param?: { trace?: TraceContext }): Logging {
-		return createLogging({
-			logPrefix: this._logPrefix,
-			logger: this._logger,
-			logging: this._logging,
-			trace: param?.trace,
-		});
-	}
-
-	getModel<T>(entity: Constructor<T>): ModelCtor<any> {
+	getModel<T>(entity: Constructable<T>): ModelStatic<any> {
 		const model = this.entities.get(entity);
 
 		if (!model) {
@@ -131,11 +93,11 @@ export class ArtisanSequelize {
 		return model;
 	}
 
-	initEntities(entities: Dictionary<Constructor<any>>): void {
+	initEntities(entities: Dictionary<Constructable<any>>): void {
 		const associations: Array<() => void> = [];
 
 		for (const [entityName, entityClass] of Object.entries(entities)) {
-			this._logger.debug(`${this._logPrefix} defining entity '${entityName}': class<${entityClass.name}>.`);
+			this._logger.debug(`defining entity '${entityName}': class<${entityClass.name}>.`);
 
 			if (this.entities.has(entityClass)) {
 				throw new ArtisanException(
@@ -171,11 +133,11 @@ export class ArtisanSequelize {
 		}
 	}
 
-	protected associate(entity: Constructor<any>, model: ModelCtor<any>, association: EntityAssociationOptions) {
+	protected associate(entity: Constructable<any>, model: ModelStatic<any>, association: EntityAssociationOptions) {
 		const relatedEntity = association.relatedEntity();
 
 		this._logger.debug(
-			`${this._logPrefix} defining association: (association: ${association.type}, entity: class<${entity.name}>, related_entity: class<${relatedEntity.name}>)`,
+			`defining association: (association: ${association.type}, entity: class<${entity.name}>, related_entity: class<${relatedEntity.name}>)`,
 			{ options: association.options },
 		);
 
@@ -204,7 +166,7 @@ export class ArtisanSequelize {
 	}
 
 	protected recursiveGetEntityMetadata<T>(
-		entityClass: Constructor<any>,
+		entityClass: Constructable<any>,
 		metadataKey: string | symbol,
 	): Dictionary<T> {
 		return recursiveGetMetadata<Dictionary<T>>(metadataKey, entityClass).reduceRight(

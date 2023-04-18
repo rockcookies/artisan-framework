@@ -1,4 +1,4 @@
-import { Namable, TraceContext } from '@artisan-framework/core';
+import { Namable } from '@artisan-framework/core';
 
 export const ScheduleProvider = Symbol('Artisan#ScheduleProvider');
 
@@ -20,7 +20,7 @@ export interface ScheduleOptions {
 export type ScheduleProvider = Namable;
 
 export interface ScheduleContext {
-	trace: TraceContext;
+	id: string;
 }
 
 export const ScheduleTask = Symbol('Artisan#ScheduleTask');

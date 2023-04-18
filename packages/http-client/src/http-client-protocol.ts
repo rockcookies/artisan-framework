@@ -1,32 +1,35 @@
-import { TraceContext } from '@artisan-framework/core';
-import { HttpOptions } from 'agentkeepalive';
-import { URL } from 'url';
-import { HttpClientResponse as _HttpClientResponse, RequestOptions } from 'urllib';
+import { Dictionary } from '@artisan-framework/core';
+import { Dispatcher } from 'undici';
 
-export const HTTP_CLIENT_PROVIDER_CONFIG_KEY = 'artisan.httpClient';
-
-export const HTTP_CLIENT_PROVIDER_INIT_ORDER = 1000;
-
-export const HttpClientProvider = Symbol('Artisan#HttpClientProvider');
-
-interface SendTraceOptions {
-	traceIdHeaderField?: string;
-	traceSpanIdHeaderField?: string;
+export interface HttpFetchOptions
+	extends Omit<Dispatcher.RequestOptions, 'headers' | 'throwOnError' | 'origin' | 'path' | 'method'> {
+	method: string;
+	headers?: Dictionary<string | string[] | undefined>;
+	throwNonOk?: boolean;
 }
 
-export interface HttpClientProviderConfig extends Omit<RequestOptions, 'agent' | 'httpsAgent'> {
-	httpAgent?: HttpOptions | boolean;
-	httpsAgent?: HttpOptions | boolean;
-	sendTrace?: SendTraceOptions | boolean;
+export type HttpFetch<R = any> = (url: URL, options: HttpFetchOptions) => Promise<HttpFetchResult<R>>;
+
+export type HttpFetchDataHandler<N, NR> = (
+	res: HttpFetchResult<N>,
+	executor: (res: HttpFetchResult<N>, type: string) => Promise<any>,
+) => Promise<NR>;
+
+export interface HttpFetchDataHandlerOptions<T, N> {
+	dataHandler?: (
+		res: HttpFetchResult<T>,
+		executor: (res: HttpFetchResult<T>, type: string) => Promise<any>,
+	) => Promise<N>;
 }
 
-export interface HttpRequestOptions extends RequestOptions {
-	trace?: TraceContext;
+export type HttpFetchWithResultOptions<R> = HttpFetchOptions & HttpFetchDataHandlerOptions<HttpFetchOptions, R>;
+
+export interface HttpFetchRequest extends HttpFetchOptions {
+	url: URL;
 }
 
-export type HttpClientResponse<T = any> = _HttpClientResponse<T>;
-
-export interface HttpClientProvider {
-	/** request */
-	request<T = any>(url: string | URL, options?: HttpRequestOptions): Promise<HttpClientResponse<T>>;
+export interface HttpFetchResult<T = any> {
+	request: HttpFetchRequest;
+	response: Dispatcher.ResponseData;
+	data: T;
 }

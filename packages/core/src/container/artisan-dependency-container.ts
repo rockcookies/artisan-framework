@@ -1,15 +1,13 @@
 import { ArtisanException } from '../error';
-import { Constructor } from '../interfaces';
+import { AbstractConstructable, Constructable } from '../interfaces';
 import { randomString } from '../utils/core-helper';
-import { AdvisorManager } from './advisor-manager';
 import {
-	AdvisorRegistry,
 	ClassRegistrationOptions,
 	ClassRegistry,
 	ConfigHolder,
 	DependencyContainer,
 	InjectableScope,
-	InjectionToken,
+	InjectionIdentifier,
 	ObjectFactory,
 	ServiceRegistry,
 	TaggedAutowiredMetadata,
@@ -32,19 +30,17 @@ export class ArtisanDependencyContainer implements DependencyContainer {
 	id = `container-${randomString(8)}`;
 
 	_registry: Registry;
-	_advisorManager: AdvisorManager;
 
-	_singletonCache = new Map<Constructor<any>, SingletonCache>();
+	_singletonCache = new Map<AbstractConstructable, SingletonCache>();
 	_dynamicCache = new Map<(c: DependencyContainer) => any, DynamicCache>();
 
 	constructor(public parent?: ArtisanDependencyContainer) {
 		this._registry = new Registry(this);
-		this._advisorManager = new AdvisorManager(this);
 	}
 
 	registerClass<T>(
-		token: InjectionToken<T>,
-		clz: Constructor<T>,
+		token: InjectionIdentifier<T>,
+		clz: Constructable<T>,
 		options?: ClassRegistrationOptions,
 	): ArtisanDependencyContainer {
 		this._registry.registerClass(token, clz, options);
@@ -52,32 +48,27 @@ export class ArtisanDependencyContainer implements DependencyContainer {
 	}
 
 	registerFactory<T extends ObjectFactory>(
-		token: InjectionToken<T>,
+		token: InjectionIdentifier<T>,
 		factory: (dependencyContainer: DependencyContainer) => T,
 	): ArtisanDependencyContainer {
 		this._registry.registerFactory(token, factory);
 		return this;
 	}
 
-	registerConstant<T>(token: InjectionToken, constant: T): ArtisanDependencyContainer {
+	registerConstant<T>(token: InjectionIdentifier, constant: T): ArtisanDependencyContainer {
 		this._registry.registerConstant(token, constant);
 		return this;
 	}
 
 	registerDynamic<T>(
-		token: InjectionToken,
+		token: InjectionIdentifier,
 		dynamic: (dependencyContainer: DependencyContainer) => T,
 	): ArtisanDependencyContainer {
 		this._registry.registerDynamic(token, dynamic);
 		return this;
 	}
 
-	registerAdvisor<T>(clz: Constructor<T>): ArtisanDependencyContainer {
-		this._registry.registerAdvisor(clz);
-		return this;
-	}
-
-	isRegistered<T>(token: InjectionToken<T>, recursive?: boolean): boolean {
+	isRegistered<T>(token: InjectionIdentifier<T>, recursive?: boolean): boolean {
 		if (this._registry.has(token)) {
 			return true;
 		}
@@ -92,7 +83,6 @@ export class ArtisanDependencyContainer implements DependencyContainer {
 	reset(): void {
 		this._singletonCache.clear();
 		this._dynamicCache.clear();
-		this._advisorManager.clear();
 		this._registry.clear();
 	}
 
@@ -100,7 +90,7 @@ export class ArtisanDependencyContainer implements DependencyContainer {
 		return new ArtisanDependencyContainer(this);
 	}
 
-	resolve<T>(token: InjectionToken<T>): T {
+	resolve<T>(token: InjectionIdentifier<T>): T {
 		return this._resolve({
 			token,
 			optional: false,
@@ -108,7 +98,7 @@ export class ArtisanDependencyContainer implements DependencyContainer {
 		});
 	}
 
-	resolveAll<T>(token: InjectionToken<T>): T[] {
+	resolveAll<T>(token: InjectionIdentifier<T>): T[] {
 		return this._resolve({
 			token,
 			optional: false,
@@ -176,7 +166,7 @@ export class ArtisanDependencyContainer implements DependencyContainer {
 		return instance;
 	}
 
-	private _construct(reg: ClassRegistry | AdvisorRegistry, ctx: ResolutionContext): any {
+	private _construct(reg: ClassRegistry, ctx: ResolutionContext): any {
 		// 尝试获取构建中缓存
 		if (ctx.scopedResolutions.has(reg.clz)) {
 			return ctx.scopedResolutions.get(reg.clz);
@@ -215,12 +205,7 @@ export class ArtisanDependencyContainer implements DependencyContainer {
 		}
 
 		// 实例化
-		let instance = Reflect.construct(reg.clz, parameters);
-
-		// 普通 class 才进行代理
-		if (reg.type === 'class') {
-			instance = this._advisorManager.adviseClass(instance, reg, this);
-		}
+		const instance = Reflect.construct(reg.clz, parameters);
 
 		// 放入构建缓存
 		ctx.scopedResolutions.set(reg.clz, instance);
@@ -250,7 +235,7 @@ export class ArtisanDependencyContainer implements DependencyContainer {
 		}
 	}
 
-	private _getSingletonCache(ctor: Constructor<any>): SingletonCache | undefined {
+	private _getSingletonCache(ctor: AbstractConstructable): SingletonCache | undefined {
 		const cache = this._singletonCache.get(ctor);
 
 		if (cache) {
@@ -262,7 +247,7 @@ export class ArtisanDependencyContainer implements DependencyContainer {
 		}
 	}
 
-	private _getRegistration(token: InjectionToken): ServiceRegistry | undefined {
+	private _getRegistration(token: InjectionIdentifier): ServiceRegistry | undefined {
 		if (this.isRegistered(token)) {
 			return this._registry.get(token);
 		}
@@ -272,7 +257,7 @@ export class ArtisanDependencyContainer implements DependencyContainer {
 		}
 	}
 
-	private _getAllRegistration(token: InjectionToken): ServiceRegistry[] | undefined {
+	private _getAllRegistration(token: InjectionIdentifier): ServiceRegistry[] | undefined {
 		if (this.isRegistered(token)) {
 			return this._registry.getAll(token);
 		}

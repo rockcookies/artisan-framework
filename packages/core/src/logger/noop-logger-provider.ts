@@ -6,6 +6,10 @@ export class NoopLoggerProvider implements LoggerProvider {
 	warn() {}
 	info() {}
 	debug() {}
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	tag(_: string) {
+		return this;
+	}
 	with() {
 		return this;
 	}

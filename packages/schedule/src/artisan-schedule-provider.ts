@@ -10,14 +10,19 @@ import {
 import { ArtisanScheduleRunner } from './artisan-schedule-runner';
 import { ScheduleProvider, ScheduleTask } from './schedule-protocol';
 
+const NAMESPACE = 'artisan-schedule';
+
 @provider({
 	register: ({ container }) => {
 		container.registerClass(ScheduleProvider, ArtisanScheduleProvider);
 	},
 })
 export class ArtisanScheduleProvider implements ScheduleProvider, OnApplicationBootstrap, OnProviderDestroy, Namable {
-	@autowired(LoggerProvider)
 	logger: LoggerProvider;
+
+	constructor(@autowired(LoggerProvider) _logger: LoggerProvider) {
+		this.logger = _logger.tag(NAMESPACE);
+	}
 
 	@autowired(DependencyContainer)
 	private container: DependencyContainer;
@@ -25,13 +30,13 @@ export class ArtisanScheduleProvider implements ScheduleProvider, OnApplicationB
 	_runners: ArtisanScheduleRunner[] = [];
 
 	name(): string {
-		return 'artisan-schedule';
+		return NAMESPACE;
 	}
 
 	async onApplicationBootstrap(): Promise<void> {
 		const tasks = this.container.resolveAll<ScheduleTask>(ScheduleTask) || [];
 
-		this.logger.info('[schedule] bootstrapping...', { task_size: tasks.length });
+		this.logger.info('bootstrapping...', { task_size: tasks.length });
 
 		for (const task of tasks) {
 			this._runners.push(new ArtisanScheduleRunner(task, { logger: this.logger }));
@@ -41,12 +46,12 @@ export class ArtisanScheduleProvider implements ScheduleProvider, OnApplicationB
 			tr.start();
 		}
 
-		this.logger.info('[schedule] bootstrapped');
+		this.logger.info('bootstrapped');
 	}
 
 	async onProviderDestroy(): Promise<void> {
-		this.logger.info('[schedule] destroying...');
+		this.logger.info('destroying...');
 		await Promise.all(this._runners.map((tr) => tr.stop()));
-		this.logger.info('[schedule] destroyed');
+		this.logger.info('destroyed');
 	}
 }

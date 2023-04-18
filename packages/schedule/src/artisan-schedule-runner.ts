@@ -1,6 +1,6 @@
-import { ArtisanException, LoggerProvider, TraceContext, createTraceContext } from '@artisan-framework/core';
+import { ArtisanException, LoggerProvider, randomString } from '@artisan-framework/core';
 import { parseExpression } from 'cron-parser';
-import { ScheduleOptions, ScheduleTask } from './schedule-protocol';
+import { ScheduleContext, ScheduleOptions, ScheduleTask } from './schedule-protocol';
 import safeTimers = require('safe-timers');
 import ms = require('ms');
 import dayJs = require('dayjs');
@@ -13,7 +13,7 @@ export class ArtisanScheduleRunner {
 	private _logger: LoggerProvider;
 	private _closed = false;
 	private _executeCount = 0;
-	private _execution?: [TraceContext, Promise<void>];
+	private _execution?: [string, Promise<void>];
 
 	constructor(task: ScheduleTask, options: { logger: LoggerProvider }) {
 		this._schedule = task.schedule();
@@ -36,7 +36,7 @@ export class ArtisanScheduleRunner {
 			try {
 				this._cronExpression = parseExpression(expression, cronOptions);
 			} catch (err) {
-				err.message = `[schedule] task<${this._name}> parse cron instruction(${expression}) error: ${err.message}`;
+				err.message = `task<${this._name}> parse cron instruction(${expression}) error: ${err.message}`;
 				throw err;
 			}
 		}
@@ -44,12 +44,12 @@ export class ArtisanScheduleRunner {
 
 	start(): void {
 		if (this._schedule.disable) {
-			this._logger.warn(`[schedule] task<${this._name}> disable`);
+			this._logger.warn(`task<${this._name}> disable`);
 			return;
 		}
 
 		if (this._schedule.immediate) {
-			this._logger.info(`[schedule] task<${this._name}> next time will execute immediate`);
+			this._logger.info(`task<${this._name}> next time will execute immediate`);
 			setImmediate(() => this.run());
 		} else {
 			this.next();
@@ -64,8 +64,8 @@ export class ArtisanScheduleRunner {
 		}
 
 		if (this._execution != null) {
-			const [trace, execution] = this._execution;
-			this._logger.warn(`[schedule] waiting for task<${this._name}> completion...`, { trace });
+			const [id, execution] = this._execution;
+			this._logger.warn(`[schedule] waiting for task<${this._name}> completion...`, { task_id: id });
 			await execution;
 		}
 
@@ -73,11 +73,11 @@ export class ArtisanScheduleRunner {
 	}
 
 	run() {
-		const trace: TraceContext = createTraceContext();
+		const id = randomString();
 
 		this._execution = [
-			trace,
-			this._run(trace)
+			id,
+			this._run({ id })
 				.then(() => {
 					this._execution = undefined;
 					this.next();
@@ -89,22 +89,22 @@ export class ArtisanScheduleRunner {
 		];
 	}
 
-	async _run(trace: TraceContext): Promise<void> {
+	async _run(ctx: ScheduleContext): Promise<void> {
 		this._executeCount++;
 		const count = this._executeCount;
 		const startTime = Date.now();
 
-		const logger = this._logger.with({ trace, execute_count: count });
+		const logger = this._logger.with({ task_id: ctx.id, execute_count: count });
 
-		logger.info(`[schedule] execute task<${this._name}>`);
+		logger.info(`execute task<${this._name}>`);
 
 		try {
-			await this._task.task({ trace });
-			logger.info(`[schedule] task<${this._name}> execute success`, {
+			await this._task.task(ctx);
+			logger.info(`task<${this._name}> execute success`, {
 				execution_time: Date.now() - startTime,
 			});
 		} catch (err) {
-			logger.error(`[schedule] task<${this._name}> execute error: ${err}`, {
+			logger.error(`task<${this._name}> execute error: ${err}`, {
 				execution_time: Date.now() - startTime,
 				err,
 			});
@@ -127,7 +127,7 @@ export class ArtisanScheduleRunner {
 				delay = ms(interval);
 
 				if (delay == null) {
-					this._logger.warn(`[schedule] get next interval undefined for task<${this._name}>`);
+					this._logger.warn(`get next interval undefined for task<${this._name}>`);
 				}
 			}
 		} else if (this._cronExpression) {
@@ -151,14 +151,14 @@ export class ArtisanScheduleRunner {
 		}
 
 		if (delay == null) {
-			this._logger.info(`[schedule] task<${this._name}> reach endDate, will stop`);
+			this._logger.info(`task<${this._name}> reach endDate, will stop`);
 			return;
 		}
 
 		this._logger.info(
-			`[schedule] task<${this._name}> next time will execute after ${delay}ms at ${dayJs(
-				Date.now() + delay,
-			).format('YYYY-MM-DD HH:mm:ss:SSS')}`,
+			`task<${this._name}> next time will execute after ${delay}ms at ${dayJs(Date.now() + delay).format(
+				'YYYY-MM-DD HH:mm:ss:SSS',
+			)}`,
 		);
 
 		const nextTick = delay < safeTimers.maxInterval ? setTimeout : safeTimers.setTimeout;
