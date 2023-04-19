@@ -12,7 +12,6 @@ import crypto = require('crypto');
 describe('cookies.test.ts', () => {
 	const createAlgorithm = (): EncryptionAlgorithm => ({
 		key: crypto.randomBytes(16).toString('hex'),
-		iv: crypto.randomBytes(8).toString('hex'),
 	});
 
 	const _encryptionAlgorithms = [createAlgorithm(), createAlgorithm()];
